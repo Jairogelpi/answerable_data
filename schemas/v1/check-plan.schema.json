@@ -21,7 +21,12 @@
           "requirement_id",
           "executor",
           "severity_on_failure",
-          "parameters"
+          "parameters",
+          "rationale",
+          "dependencies",
+          "mandatory",
+          "disclosure",
+          "estimated_cost"
         ],
         "properties": {
           "check_id": { "type": "string", "minLength": 1 },
@@ -30,10 +35,16 @@
           "requirement_id": { "type": "string", "minLength": 1 },
           "executor": { "type": "string", "minLength": 1 },
           "severity_on_failure": { "type": "string", "minLength": 1 },
-          "parameters": { "type": "object" }
+          "parameters": { "type": "object" },
+          "rationale": { "type": "string" },
+          "dependencies": { "type": "array", "items": { "type": "string" } },
+          "mandatory": { "type": "boolean" },
+          "disclosure": {
+            "enum": ["none", "metadata_only", "sample_redacted", "raw_rows"]
+          },
+          "estimated_cost": { "type": "integer", "minimum": 0 }
         }
       }
     }
   }
 }
-

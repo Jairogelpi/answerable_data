@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://answerable.dev/schemas/v1/data-asset-snapshot.schema.json",
+  "title": "Data Asset Snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "asset_id",
+    "path",
+    "source_format",
+    "fingerprint",
+    "byte_size",
+    "row_count",
+    "profile"
+  ],
+  "properties": {
+    "asset_id": { "type": "string", "minLength": 1 },
+    "path": { "type": "string", "minLength": 1 },
+    "source_format": { "enum": ["csv", "jsonl", "parquet"] },
+    "fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "byte_size": { "type": "integer", "minimum": 0 },
+    "row_count": { "type": "integer", "minimum": 0 },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["row_count", "sampled", "columns"],
+      "properties": {
+        "row_count": { "type": "integer", "minimum": 0 },
+        "sampled": { "type": "boolean" },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "physical_type", "null_count", "distinct_count"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "physical_type": { "type": "string", "minLength": 1 },
+              "null_count": { "type": "integer", "minimum": 0 },
+              "distinct_count": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

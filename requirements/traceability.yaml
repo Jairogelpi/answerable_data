@@ -36,4 +36,51 @@ requirements:
     implementation: ["src/answerable/application/service.py"]
     tests: ["tests/test_service.py"]
     status: verified
-
+  FR-DATA-002:
+    implementation: ["src/answerable/execution/duckdb_readonly.py"]
+    tests: ["tests/test_readonly_duckdb.py"]
+    status: verified
+  FR-DATA-003:
+    implementation: ["src/answerable/ingestion/files.py"]
+    tests: ["tests/test_file_ingestion.py"]
+    status: verified
+  FR-DATA-005:
+    implementation: ["src/answerable/ingestion/files.py"]
+    tests: ["tests/test_file_ingestion.py"]
+    status: verified
+  FR-GRAIN-001:
+    implementation: ["src/answerable/analysis/grain.py"]
+    tests: ["tests/test_grain_and_joins.py"]
+    status: verified
+  FR-GRAIN-003:
+    implementation: ["src/answerable/analysis/joins.py"]
+    tests: ["tests/test_grain_and_joins.py"]
+    status: verified
+  FR-GRAIN-004:
+    implementation: ["src/answerable/analysis/joins.py"]
+    tests: ["tests/test_grain_and_joins.py"]
+    status: verified
+  FR-GRAIN-005:
+    implementation: ["src/answerable/analysis/metrics.py"]
+    tests: ["tests/test_metrics.py"]
+    status: verified
+  FR-GRAIN-007:
+    implementation: ["src/answerable/analysis/grain.py"]
+    tests: ["tests/test_grain_and_joins.py"]
+    status: verified
+  FR-PLAN-001:
+    implementation: ["src/answerable/planning/planner.py"]
+    tests: ["tests/test_skills_and_planner.py"]
+    status: verified
+  FR-PLAN-002:
+    implementation: ["src/answerable/planning/planner.py"]
+    tests: ["tests/test_skills_and_planner.py"]
+    status: verified
+  FR-PLAN-004:
+    implementation: ["src/answerable/planning/registry.py"]
+    tests: ["tests/test_skills_and_planner.py"]
+    status: verified
+  FR-PLAN-005:
+    implementation: ["src/answerable/planning/planner.py"]
+    tests: ["tests/test_skills_and_planner.py"]
+    status: verified
