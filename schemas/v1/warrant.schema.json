@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://answerable.dev/schemas/v1/warrant.schema.json",
+  "title": "Evidence Warrant",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "warrant_id",
+    "assessment_id",
+    "version",
+    "verdict",
+    "allowed_claims",
+    "forbidden_claims",
+    "evidence_graph_id",
+    "issued_at"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "warrant_id": { "type": "string", "minLength": 1 },
+    "assessment_id": { "type": "string", "minLength": 1 },
+    "version": { "type": "integer", "minimum": 1 },
+    "verdict": {
+      "enum": [
+        "ANSWERABLE",
+        "ANSWERABLE_WITH_ASSUMPTIONS",
+        "PARTIALLY_ANSWERABLE",
+        "NOT_ANSWERABLE_YET",
+        "FUNDAMENTALLY_UNIDENTIFIABLE",
+        "MISLEADING_QUESTION",
+        "INSUFFICIENT_POWER",
+        "DATA_INTEGRITY_FAILURE",
+        "ASSESSMENT_INCOMPLETE"
+      ]
+    },
+    "allowed_claims": { "type": "array", "items": { "type": "string" } },
+    "forbidden_claims": { "type": "array", "items": { "type": "string" } },
+    "evidence_graph_id": { "type": "string", "minLength": 1 },
+    "issued_at": { "type": "string", "format": "date-time" }
+  }
+}
+

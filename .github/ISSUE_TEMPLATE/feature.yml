@@ -1,0 +1,26 @@
+name: Feature proposal
+description: Propose behavior tied to an analytical-validity problem
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Analytical problem
+      description: Describe the unsupported claim or workflow risk this addresses.
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Proposed observable contract
+      description: Define inputs, outputs, failure behavior, and evidence.
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Acceptance and adversarial tests
+    validations:
+      required: true
+
