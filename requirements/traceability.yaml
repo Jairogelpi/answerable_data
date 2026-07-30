@@ -84,3 +84,107 @@ requirements:
     implementation: ["src/answerable/planning/planner.py"]
     tests: ["tests/test_skills_and_planner.py"]
     status: verified
+  FR-EXEC-001:
+    implementation: ["src/answerable/execution/engine.py"]
+    tests: ["tests/test_execution_engine.py"]
+    status: verified
+  FR-EXEC-002:
+    implementation: ["src/answerable/execution/python_sandbox.py"]
+    tests: ["tests/test_python_sandbox.py"]
+    status: verified
+  FR-EXEC-004:
+    implementation: ["src/answerable/execution/engine.py"]
+    tests: ["tests/test_execution_engine.py"]
+    status: verified
+  FR-EXEC-006:
+    implementation: ["src/answerable/execution/engine.py"]
+    tests: ["tests/test_execution_engine.py"]
+    status: verified
+  FR-EXEC-007:
+    implementation: ["src/answerable/execution/engine.py"]
+    tests: ["tests/test_execution_engine.py"]
+    status: verified
+  FR-EXEC-008:
+    implementation: ["src/answerable/execution/engine.py"]
+    tests: ["tests/test_execution_engine.py"]
+    status: verified
+  FR-EXEC-009:
+    implementation: ["src/answerable/execution/python_sandbox.py"]
+    tests: ["tests/test_python_sandbox.py"]
+    status: verified
+  FR-EXEC-010:
+    implementation: ["src/answerable/execution/python_sandbox.py"]
+    tests: ["tests/test_python_sandbox.py"]
+    status: verified
+  FR-FRAME-001:
+    implementation: ["src/answerable/framing/models.py", "src/answerable/framing/framer.py"]
+    tests: ["tests/test_framing.py"]
+    status: verified
+  FR-FRAME-002:
+    implementation: ["src/answerable/framing/framer.py"]
+    tests: ["tests/test_framing.py"]
+    status: verified
+  FR-FRAME-003:
+    implementation: ["src/answerable/framing/framer.py"]
+    tests: ["tests/test_framing.py"]
+    status: verified
+  FR-FRAME-004:
+    implementation: ["src/answerable/framing/framer.py"]
+    tests: ["tests/test_framing.py"]
+    status: verified
+  FR-FRAME-005:
+    implementation: ["src/answerable/framing/framer.py"]
+    tests: ["tests/test_framing.py"]
+    status: verified
+  FR-FRAME-006:
+    implementation: ["src/answerable/framing/framer.py"]
+    tests: ["tests/test_framing.py"]
+    status: verified
+  FR-QUALITY-001:
+    implementation: ["src/answerable/quality/checks.py"]
+    tests: ["tests/test_data_quality.py"]
+    status: verified
+  FR-QUALITY-002:
+    implementation: ["src/answerable/quality/checks.py"]
+    tests: ["tests/test_data_quality.py"]
+    status: verified
+  FR-QUALITY-003:
+    implementation: ["src/answerable/quality/checks.py"]
+    tests: ["tests/test_data_quality.py"]
+    status: verified
+  FR-QUALITY-004:
+    implementation: ["src/answerable/quality/checks.py"]
+    tests: ["tests/test_data_quality.py"]
+    status: verified
+  FR-MISSING-001:
+    implementation: ["src/answerable/quality/checks.py"]
+    tests: ["tests/test_data_quality.py"]
+    status: verified
+  FR-MISSING-002:
+    implementation: ["src/answerable/quality/checks.py"]
+    tests: ["tests/test_data_quality.py"]
+    status: verified
+  FR-MISSING-003:
+    implementation: ["src/answerable/quality/checks.py"]
+    tests: ["tests/test_data_quality.py"]
+    status: verified
+  FR-TIME-001:
+    implementation: ["src/answerable/quality/temporal.py"]
+    tests: ["tests/test_temporal_quality.py"]
+    status: verified
+  FR-TIME-002:
+    implementation: ["src/answerable/quality/temporal.py"]
+    tests: ["tests/test_temporal_quality.py"]
+    status: verified
+  FR-TIME-003:
+    implementation: ["src/answerable/quality/temporal.py"]
+    tests: ["tests/test_temporal_quality.py"]
+    status: verified
+  FR-TIME-004:
+    implementation: ["src/answerable/quality/temporal.py"]
+    tests: ["tests/test_temporal_quality.py"]
+    status: verified
+  FR-TIME-005:
+    implementation: ["src/answerable/quality/temporal.py"]
+    tests: ["tests/test_temporal_quality.py"]
+    status: verified

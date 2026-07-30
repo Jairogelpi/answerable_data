@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://answerable.dev/schemas/v1/temporal-context.schema.json",
+  "title": "Temporal assessment context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_time", "require_timezone"],
+  "properties": {
+    "event_time": {"type": "string", "minLength": 1},
+    "prediction_time": {"type": ["string", "null"]},
+    "feature_available_time": {"type": ["string", "null"]},
+    "label_time": {"type": ["string", "null"]},
+    "observation_window_seconds": {"type": ["number", "null"], "minimum": 0},
+    "analysis_end": {"type": ["string", "null"], "format": "date-time"},
+    "require_timezone": {"type": "boolean"}
+  }
+}
