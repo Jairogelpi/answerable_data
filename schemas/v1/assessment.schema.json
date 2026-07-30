@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://answerable.dev/schemas/v1/assessment.schema.json",
+  "title": "Assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "assessment_id",
+    "workspace_id",
+    "created_by",
+    "state",
+    "version",
+    "created_at",
+    "updated_at",
+    "question_contract_id",
+    "artifact_ids",
+    "cancelled"
+  ],
+  "properties": {
+    "assessment_id": { "type": "string", "minLength": 1 },
+    "workspace_id": { "type": "string", "minLength": 1 },
+    "created_by": { "type": "string", "minLength": 1 },
+    "state": {
+      "enum": [
+        "draft",
+        "framing",
+        "awaiting_clarification",
+        "profiling",
+        "planning",
+        "awaiting_approval",
+        "executing",
+        "synthesizing",
+        "review",
+        "issued",
+        "rejected",
+        "failed",
+        "superseded"
+      ]
+    },
+    "version": { "type": "integer", "minimum": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "question_contract_id": { "type": ["string", "null"] },
+    "artifact_ids": { "type": "array", "items": { "type": "string" } },
+    "cancelled": { "type": "boolean" }
+  }
+}
+

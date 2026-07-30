@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://answerable.dev/schemas/v1/question-contract.schema.json",
+  "title": "Question Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "question_id",
+    "raw_question",
+    "normalized_question",
+    "language",
+    "analysis_type",
+    "population",
+    "unit_of_analysis",
+    "outcome",
+    "time",
+    "assumptions",
+    "open_questions"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "question_id": { "type": "string", "minLength": 1 },
+    "raw_question": { "type": "string", "minLength": 1 },
+    "normalized_question": { "type": "string", "minLength": 1 },
+    "language": { "type": "string", "minLength": 2 },
+    "analysis_type": {
+      "enum": ["descriptive", "comparative", "diagnostic", "predictive", "causal", "prescriptive"]
+    },
+    "population": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "inclusion", "exclusion"],
+      "properties": {
+        "description": { "type": "string", "minLength": 1 },
+        "inclusion": { "type": "array", "items": { "type": "string" } },
+        "exclusion": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "unit_of_analysis": { "type": "string", "minLength": 1 },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric_id", "definition", "value_type", "numerator", "denominator"],
+      "properties": {
+        "metric_id": { "type": "string", "minLength": 1 },
+        "definition": { "type": "string", "minLength": 1 },
+        "value_type": { "type": "string", "minLength": 1 },
+        "numerator": { "type": ["string", "null"] },
+        "denominator": { "type": ["string", "null"] }
+      }
+    },
+    "time": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observation_start", "observation_end"],
+      "properties": {
+        "observation_start": { "type": "string", "format": "date-time" },
+        "observation_end": { "type": "string", "format": "date-time" }
+      }
+    },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "open_questions": { "type": "array", "items": { "type": "string" } }
+  }
+}
+

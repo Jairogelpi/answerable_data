@@ -1,0 +1,39 @@
+schema_version: "1.0"
+requirements:
+  INV-006:
+    implementation: ["src/answerable/domain/serialization.py"]
+    tests: ["tests/test_serialization.py"]
+    status: verified
+  INV-011:
+    implementation: ["src/answerable/persistence/sqlite.py"]
+    tests: ["tests/test_sqlite_repository.py"]
+    status: verified
+  FR-LIFE-001:
+    implementation: ["src/answerable/domain/lifecycle.py"]
+    tests: ["tests/test_lifecycle.py"]
+    status: verified
+  FR-LIFE-002:
+    implementation: ["src/answerable/domain/lifecycle.py"]
+    tests: ["tests/test_lifecycle.py"]
+    status: verified
+  FR-LIFE-003:
+    implementation: ["src/answerable/application/service.py", "src/answerable/persistence/sqlite.py"]
+    tests: ["tests/test_service.py"]
+    status: verified
+  FR-LIFE-004:
+    implementation: ["src/answerable/domain/assessment.py"]
+    tests: ["tests/test_assessment.py"]
+    status: verified
+  FR-LIFE-005:
+    implementation: ["src/answerable/domain/lifecycle.py"]
+    tests: ["tests/test_lifecycle.py"]
+    status: verified
+  FR-LIFE-006:
+    implementation: ["src/answerable/domain/assessment.py"]
+    tests: ["tests/test_assessment.py"]
+    status: verified
+  FR-LIFE-007:
+    implementation: ["src/answerable/application/service.py"]
+    tests: ["tests/test_service.py"]
+    status: verified
+
