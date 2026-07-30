@@ -376,3 +376,71 @@ requirements:
     implementation: ["src/answerable/interfaces/mcp.py"]
     tests: ["tests/test_interfaces.py"]
     status: verified
+  UX-001:
+    implementation: ["src/answerable/web/app.py"]
+    tests: ["tests/test_web_application.py"]
+    status: verified
+  UX-002:
+    implementation: ["src/answerable/web/app.py"]
+    tests: ["tests/test_web_application.py"]
+    status: verified
+  UX-003:
+    implementation: ["src/answerable/web/app.py"]
+    tests: ["tests/test_web_application.py"]
+    status: verified
+  UX-004:
+    implementation: ["src/answerable/web/app.py"]
+    tests: ["tests/test_web_application.py"]
+    status: verified
+  UX-005:
+    implementation: ["src/answerable/web/app.py"]
+    tests: ["tests/test_web_application.py"]
+    status: verified
+  UX-006:
+    implementation: ["src/answerable/web/app.py"]
+    tests: ["tests/test_web_application.py"]
+    status: verified
+  UX-007:
+    implementation: ["src/answerable/web/app.py"]
+    tests: ["tests/test_web_application.py"]
+    status: verified
+  UX-008:
+    implementation: ["src/answerable/web/app.py"]
+    tests: ["tests/test_web_application.py"]
+    status: verified
+  UX-009:
+    implementation: ["src/answerable/web/app.py"]
+    tests: ["tests/test_web_application.py"]
+    status: verified
+  UX-010:
+    implementation: ["src/answerable/web/app.py"]
+    tests: ["tests/test_web_application.py"]
+    status: verified
+  SEC-002:
+    implementation: ["src/answerable/enterprise/governance.py"]
+    tests: ["tests/test_enterprise_governance.py"]
+    status: verified
+  SEC-008:
+    implementation: ["src/answerable/enterprise/governance.py"]
+    tests: ["tests/test_enterprise_governance.py"]
+    status: verified
+  SEC-009:
+    implementation: ["src/answerable/enterprise/governance.py"]
+    tests: ["tests/test_enterprise_governance.py"]
+    status: verified
+  SEC-010:
+    implementation: ["src/answerable/enterprise/governance.py"]
+    tests: ["tests/test_enterprise_governance.py"]
+    status: verified
+  FR-BENCH-001:
+    implementation: ["src/answerable/benchmark.py"]
+    tests: ["tests/test_benchmark_release.py"]
+    status: verified
+  FR-BENCH-002:
+    implementation: ["src/answerable/benchmark.py"]
+    tests: ["tests/test_benchmark_release.py"]
+    status: verified
+  FR-BENCH-003:
+    implementation: ["src/answerable/benchmark.py"]
+    tests: ["tests/test_benchmark_release.py"]
+    status: verified
