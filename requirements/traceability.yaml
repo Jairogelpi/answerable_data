@@ -444,3 +444,15 @@ requirements:
     implementation: ["src/answerable/benchmark.py"]
     tests: ["tests/test_benchmark_release.py"]
     status: verified
+  FR-CONNECTOR-001:
+    implementation: ["src/answerable/enterprise/connectors.py"]
+    tests: ["tests/test_concrete_connectors.py"]
+    status: verified
+  FR-CONNECTOR-002:
+    implementation: ["src/answerable/enterprise/connectors.py"]
+    tests: ["tests/test_concrete_connectors.py"]
+    status: verified
+  FR-CONNECTOR-003:
+    implementation: ["src/answerable/enterprise/connectors.py"]
+    tests: ["tests/test_concrete_connectors.py"]
+    status: verified
