@@ -41,7 +41,7 @@ jobs:
         run: python -m build
 
       - name: Attest distributions
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: "dist/*"
 
