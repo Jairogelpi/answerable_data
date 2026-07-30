@@ -284,3 +284,95 @@ requirements:
     implementation: ["src/answerable/decision/prescriptive.py"]
     tests: ["tests/test_diagnostic_prescriptive.py"]
     status: verified
+  FR-GRAPH-001:
+    implementation: ["src/answerable/evidence/graph.py"]
+    tests: ["tests/test_evidence_graph.py"]
+    status: verified
+  FR-GRAPH-002:
+    implementation: ["src/answerable/evidence/graph.py"]
+    tests: ["tests/test_evidence_graph.py"]
+    status: verified
+  FR-GRAPH-003:
+    implementation: ["src/answerable/evidence/graph.py"]
+    tests: ["tests/test_evidence_graph.py"]
+    status: verified
+  FR-GRAPH-004:
+    implementation: ["src/answerable/evidence/graph.py"]
+    tests: ["tests/test_evidence_graph.py"]
+    status: verified
+  FR-GRAPH-005:
+    implementation: ["src/answerable/evidence/graph.py"]
+    tests: ["tests/test_evidence_graph.py"]
+    status: verified
+  FR-GRAPH-006:
+    implementation: ["src/answerable/evidence/graph.py"]
+    tests: ["tests/test_evidence_graph.py"]
+    status: verified
+  FR-GRAPH-007:
+    implementation: ["src/answerable/evidence/graph.py"]
+    tests: ["tests/test_evidence_graph.py"]
+    status: verified
+  FR-VERDICT-001:
+    implementation: ["src/answerable/evidence/verdict.py"]
+    tests: ["tests/test_verdict_and_claims.py"]
+    status: verified
+  FR-VERDICT-002:
+    implementation: ["src/answerable/evidence/verdict.py"]
+    tests: ["tests/test_verdict_and_claims.py"]
+    status: verified
+  FR-VERDICT-003:
+    implementation: ["src/answerable/evidence/verdict.py"]
+    tests: ["tests/test_verdict_and_claims.py"]
+    status: verified
+  FR-VERDICT-004:
+    implementation: ["src/answerable/evidence/verdict.py"]
+    tests: ["tests/test_verdict_and_claims.py"]
+    status: verified
+  FR-VERDICT-005:
+    implementation: ["src/answerable/evidence/verdict.py"]
+    tests: ["tests/test_verdict_and_claims.py"]
+    status: verified
+  FR-VERDICT-006:
+    implementation: ["src/answerable/evidence/verdict.py"]
+    tests: ["tests/test_verdict_and_claims.py"]
+    status: verified
+  FR-WARRANT-001:
+    implementation: ["src/answerable/warrants/service.py"]
+    tests: ["tests/test_warrants.py"]
+    status: verified
+  FR-WARRANT-002:
+    implementation: ["src/answerable/warrants/service.py"]
+    tests: ["tests/test_warrants.py"]
+    status: verified
+  FR-WARRANT-003:
+    implementation: ["src/answerable/warrants/service.py"]
+    tests: ["tests/test_warrants.py"]
+    status: verified
+  FR-WARRANT-004:
+    implementation: ["src/answerable/warrants/service.py"]
+    tests: ["tests/test_warrants.py"]
+    status: verified
+  FR-WARRANT-005:
+    implementation: ["src/answerable/warrants/service.py"]
+    tests: ["tests/test_warrants.py"]
+    status: verified
+  FR-API-001:
+    implementation: ["src/answerable/interfaces/api.py"]
+    tests: ["tests/test_interfaces.py"]
+    status: verified
+  FR-API-002:
+    implementation: ["src/answerable/interfaces/api.py"]
+    tests: ["tests/test_interfaces.py"]
+    status: verified
+  FR-CLI-001:
+    implementation: ["src/answerable/cli.py"]
+    tests: ["tests/test_interfaces.py"]
+    status: verified
+  FR-MCP-001:
+    implementation: ["src/answerable/interfaces/mcp.py"]
+    tests: ["tests/test_interfaces.py"]
+    status: verified
+  FR-MCP-002:
+    implementation: ["src/answerable/interfaces/mcp.py"]
+    tests: ["tests/test_interfaces.py"]
+    status: verified
