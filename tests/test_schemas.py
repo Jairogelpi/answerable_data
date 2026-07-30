@@ -11,7 +11,7 @@ SCHEMAS = ROOT / "schemas" / "v1"
 class PublicSchemaTests(unittest.TestCase):
     def test_phase_2_all_public_schemas_are_valid_json_with_stable_ids(self) -> None:
         paths = sorted(SCHEMAS.glob("*.schema.json"))
-        self.assertEqual(len(paths), 9)
+        self.assertEqual(len(paths), 12)
         for path in paths:
             schema = json.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(schema["$schema"], "https://json-schema.org/draft/2020-12/schema")

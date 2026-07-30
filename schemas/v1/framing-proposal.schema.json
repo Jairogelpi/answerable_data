@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://answerable.dev/schemas/v1/framing-proposal.schema.json",
+  "title": "Framing proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["normalized_question", "analysis_type", "fields", "ambiguities", "clarifications"],
+  "properties": {
+    "normalized_question": {"type": "string", "minLength": 1},
+    "analysis_type": {
+      "enum": ["descriptive", "diagnostic", "predictive", "causal", "unknown"]
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["value", "source", "confidence"],
+        "properties": {
+          "value": {"type": "string"},
+          "source": {"type": "string"},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    },
+    "ambiguities": {"type": "array", "items": {"type": "string"}},
+    "clarifications": {"type": "array", "items": {"type": "string"}}
+  }
+}
