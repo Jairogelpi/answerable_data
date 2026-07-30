@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://answerable.dev/schemas/v1/causal-contract.schema.json",
+  "title": "Causal contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["treatment", "outcome", "population", "estimand", "strategy", "adjustment_set", "assumptions", "falsification_checks", "sensitivity_checks"],
+  "properties": {
+    "treatment": {"type": "string", "minLength": 1},
+    "outcome": {"type": "string", "minLength": 1},
+    "population": {"type": "string", "minLength": 1},
+    "estimand": {"type": "string", "minLength": 1},
+    "strategy": {"enum": ["randomized_experiment", "regression_adjustment", "matching_weighting", "difference_in_differences", "interrupted_time_series", "regression_discontinuity", "instrumental_variable", "synthetic_control", "panel_estimators"]},
+    "adjustment_set": {"type": "array", "items": {"type": "string"}},
+    "assumptions": {"type": "array", "items": {"type": "string"}},
+    "falsification_checks": {"type": "array", "items": {"type": "string"}},
+    "sensitivity_checks": {"type": "array", "items": {"type": "string"}}
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://answerable.dev/schemas/v1/recommendation.schema.json",
+  "title": "Recommendation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["objective", "selected", "alternatives", "expected_utility", "uncertainty", "downside_guardrails", "reversal_condition"],
+  "properties": {
+    "objective": {"type": "string", "minLength": 1},
+    "selected": {"type": "string", "minLength": 1},
+    "alternatives": {"type": "array", "minItems": 2, "items": {"type": "string"}},
+    "expected_utility": {"type": "number"},
+    "uncertainty": {"type": "number", "minimum": 0},
+    "downside_guardrails": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "reversal_condition": {"type": "string", "minLength": 1}
+  }
+}

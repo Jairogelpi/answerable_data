@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://answerable.dev/schemas/v1/predictive-assessment.schema.json",
+  "title": "Predictive assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["brier_score", "baseline_brier", "findings"],
+  "properties": {
+    "brier_score": {"type": "number", "minimum": 0},
+    "baseline_brier": {"type": "number", "minimum": 0},
+    "findings": {"type": "array", "items": {"type": "object"}}
+  }
+}
