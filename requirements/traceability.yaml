@@ -188,3 +188,99 @@ requirements:
     implementation: ["src/answerable/quality/temporal.py"]
     tests: ["tests/test_temporal_quality.py"]
     status: verified
+  FR-STAT-001:
+    implementation: ["src/answerable/statistics/validity.py"]
+    tests: ["tests/test_statistical_validity.py"]
+    status: verified
+  FR-STAT-002:
+    implementation: ["src/answerable/statistics/validity.py"]
+    tests: ["tests/test_statistical_validity.py"]
+    status: verified
+  FR-STAT-003:
+    implementation: ["src/answerable/statistics/validity.py"]
+    tests: ["tests/test_statistical_validity.py"]
+    status: verified
+  FR-STAT-004:
+    implementation: ["src/answerable/statistics/validity.py"]
+    tests: ["tests/test_statistical_validity.py"]
+    status: verified
+  FR-STAT-005:
+    implementation: ["src/answerable/statistics/validity.py"]
+    tests: ["tests/test_statistical_validity.py"]
+    status: verified
+  FR-EXPERIMENT-001:
+    implementation: ["src/answerable/statistics/experiments.py"]
+    tests: ["tests/test_experiment_validity.py"]
+    status: verified
+  FR-EXPERIMENT-002:
+    implementation: ["src/answerable/statistics/experiments.py"]
+    tests: ["tests/test_experiment_validity.py"]
+    status: verified
+  FR-EXPERIMENT-003:
+    implementation: ["src/answerable/statistics/experiments.py"]
+    tests: ["tests/test_experiment_validity.py"]
+    status: verified
+  FR-EXPERIMENT-004:
+    implementation: ["src/answerable/statistics/experiments.py"]
+    tests: ["tests/test_experiment_validity.py"]
+    status: verified
+  FR-EXPERIMENT-005:
+    implementation: ["src/answerable/statistics/experiments.py"]
+    tests: ["tests/test_experiment_validity.py"]
+    status: verified
+  FR-CAUSAL-001:
+    implementation: ["src/answerable/causal/contract.py"]
+    tests: ["tests/test_causal_validity.py"]
+    status: verified
+  FR-CAUSAL-002:
+    implementation: ["src/answerable/causal/contract.py"]
+    tests: ["tests/test_causal_validity.py"]
+    status: verified
+  FR-CAUSAL-003:
+    implementation: ["src/answerable/causal/contract.py"]
+    tests: ["tests/test_causal_validity.py"]
+    status: verified
+  FR-CAUSAL-004:
+    implementation: ["src/answerable/causal/contract.py"]
+    tests: ["tests/test_causal_validity.py"]
+    status: verified
+  FR-CAUSAL-005:
+    implementation: ["src/answerable/causal/contract.py"]
+    tests: ["tests/test_causal_validity.py"]
+    status: verified
+  FR-PREDICT-001:
+    implementation: ["src/answerable/decision/predictive.py"]
+    tests: ["tests/test_predictive_validity.py"]
+    status: verified
+  FR-PREDICT-002:
+    implementation: ["src/answerable/decision/predictive.py"]
+    tests: ["tests/test_predictive_validity.py"]
+    status: verified
+  FR-PREDICT-003:
+    implementation: ["src/answerable/decision/predictive.py"]
+    tests: ["tests/test_predictive_validity.py"]
+    status: verified
+  FR-PREDICT-004:
+    implementation: ["src/answerable/decision/predictive.py"]
+    tests: ["tests/test_predictive_validity.py"]
+    status: verified
+  FR-DIAG-001:
+    implementation: ["src/answerable/decision/diagnostic.py"]
+    tests: ["tests/test_diagnostic_prescriptive.py"]
+    status: verified
+  FR-DIAG-002:
+    implementation: ["src/answerable/decision/diagnostic.py"]
+    tests: ["tests/test_diagnostic_prescriptive.py"]
+    status: verified
+  FR-DIAG-003:
+    implementation: ["src/answerable/decision/diagnostic.py"]
+    tests: ["tests/test_diagnostic_prescriptive.py"]
+    status: verified
+  FR-PRESCRIPTIVE-001:
+    implementation: ["src/answerable/decision/prescriptive.py"]
+    tests: ["tests/test_diagnostic_prescriptive.py"]
+    status: verified
+  FR-PRESCRIPTIVE-002:
+    implementation: ["src/answerable/decision/prescriptive.py"]
+    tests: ["tests/test_diagnostic_prescriptive.py"]
+    status: verified
