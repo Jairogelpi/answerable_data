@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://answerable.dev/schemas/v1/metric-definition.schema.json",
+  "title": "Metric Definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "metric_id",
+    "metric_type",
+    "grain",
+    "expression",
+    "numerator",
+    "denominator"
+  ],
+  "properties": {
+    "metric_id": { "type": "string", "minLength": 1 },
+    "metric_type": {
+      "enum": ["additive", "ratio", "semi_additive", "non_additive"]
+    },
+    "grain": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "expression": { "type": "string", "minLength": 1 },
+    "numerator": { "type": ["string", "null"] },
+    "denominator": { "type": ["string", "null"] }
+  }
+}
+

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://answerable.dev/schemas/v1/planned-check-plan.schema.json",
+  "title": "Planned Check Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["checks", "clarifications", "preview"],
+  "properties": {
+    "checks": { "type": "array", "items": { "type": "object" } },
+    "clarifications": { "type": "array", "items": { "type": "string" } },
+    "preview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["estimated_cost", "maximum_disclosure", "check_count"],
+      "properties": {
+        "estimated_cost": { "type": "integer", "minimum": 0 },
+        "maximum_disclosure": {
+          "enum": ["none", "metadata_only", "sample_redacted", "raw_rows"]
+        },
+        "check_count": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
+

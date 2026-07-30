@@ -100,6 +100,17 @@ class CheckSpec:
     executor: str
     severity_on_failure: str
     parameters: dict[str, object] = field(default_factory=dict)
+    rationale: str = ""
+    dependencies: tuple[str, ...] = ()
+    mandatory: bool = False
+    disclosure: str = "metadata_only"
+    estimated_cost: int = 0
+
+    def __post_init__(self) -> None:
+        if self.estimated_cost < 0:
+            raise ValueError("estimated_cost cannot be negative")
+        if self.check_id in self.dependencies:
+            raise ValueError("a check cannot depend on itself")
 
 
 @dataclass(frozen=True, slots=True)

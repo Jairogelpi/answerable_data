@@ -79,6 +79,20 @@ class SerializationTests(unittest.TestCase):
         encoded = to_dict(plan)
         self.assertEqual(encoded["checks"][0]["parameters"]["columns"], ["a", "b"])
 
+    def test_phase_6_check_spec_validates_cost_and_dependencies(self) -> None:
+        with self.assertRaisesRegex(ValueError, "negative"):
+            CheckSpec("a", "schema", "1", "FR-PLAN-001", "python", "blocker", estimated_cost=-1)
+        with self.assertRaisesRegex(ValueError, "itself"):
+            CheckSpec(
+                "a",
+                "schema",
+                "1",
+                "FR-PLAN-001",
+                "python",
+                "blocker",
+                dependencies=("a",),
+            )
+
     def test_INV_006_serializes_evidence_graph_payloads(self) -> None:
         graph = EvidenceGraph(
             graph_id="graph_01",
