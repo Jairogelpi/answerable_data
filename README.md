@@ -76,15 +76,17 @@ Expected version:
 from answerable import assess
 from answerable.evidence.verdict import FindingInput, Repairability
 
-result = assess((
-    FindingInput(
-        finding_id="no-control",
-        category="identification",
-        severity="blocker",
-        message="No comparable untreated population exists.",
-        repairability=Repairability.RECOVERABLE,
-    ),
-))
+result = assess(
+    (
+        FindingInput(
+            finding_id="no-control",
+            category="identification",
+            severity="blocker",
+            message="No comparable untreated population exists.",
+            repairability=Repairability.RECOVERABLE,
+        ),
+    )
+)
 
 print(result.verdict)
 print(result.decisive_findings[0].message)
