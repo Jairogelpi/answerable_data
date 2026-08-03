@@ -1,0 +1,51 @@
+question_id: q_campaign_retention
+raw_question: "¿La campaña incrementó la retención a 90 días?"
+normalized_question: "Did campaign exposure increase 90-day retention for customers acquired between 2025-01-01 and 2025-05-31?"
+language: es
+analysis_type: causal
+unit_of_analysis: customer
+
+population:
+  description: "Customers acquired between 2025-01-01 and 2025-05-31"
+  inclusion: ["first acquisition recorded in the period"]
+
+outcome:
+  metric_id: retention_90d
+  definition: "Share of customers still active 90 days after acquisition"
+  value_type: ratio
+  numerator: retained_90d
+  denominator: customer_id
+
+time:
+  observation_start: "2025-01-01T00:00:00+00:00"
+  observation_end: "2025-06-30T00:00:00+00:00"
+
+data:
+  entity_column: customer_id
+  event_time_column: acquisition_date
+  treatment_column: campaign_exposed
+  outcome_column: retained_90d
+  covariate_columns: ["acquisition_channel"]
+  observation_window_days: 90
+  analysis_end: "2025-06-30T00:00:00+00:00"
+
+causal:
+  treatment: campaign_exposed
+  outcome: retained_90d
+  population: "Customers acquired between 2025-01-01 and 2025-05-31"
+  estimand: "Average treatment effect on the treated of campaign exposure on 90-day retention"
+  strategy: regression_adjustment
+  adjustment_set: ["acquisition_channel"]
+  assumptions:
+    - "Exposure is recorded without error."
+    - "Retention is measured identically for both groups."
+  falsification_checks: ["pre-period outcome comparison"]
+  sensitivity_checks: []
+
+claims:
+  - text: "Observed 90-day retention was 12 points higher among exposed customers."
+    claim_class: descriptive
+  - text: "The campaign caused a 12 point increase in 90-day retention."
+    claim_class: causal
+  - text: "The campaign led to higher retention."
+    claim_class: causal
