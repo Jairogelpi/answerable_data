@@ -43,6 +43,8 @@ class TemporalAssessor:
                     (context.event_time,),
                 )
             )
+            # Ordering is unreliable, so window and label checks cannot be evaluated.
+            return tuple(findings)
         if context.prediction_time and context.feature_available_time:
             leakage = 0
             for row in rows:

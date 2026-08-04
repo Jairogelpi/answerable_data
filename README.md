@@ -11,7 +11,7 @@
 </div>
 
 > [!NOTE]
-> **v0.1.0 is a technical preview.** The validity core, schemas, execution safeguards, evidence model, warrants, benchmark gate, Python API and interface contracts are executable. The CLI and web layers are currently thin contract surfaces, not a finished end-user application.
+> **Technical preview.** The validity core, schemas, execution safeguards, evidence model, warrants, benchmark gate, Python API and interface contracts are executable, and `answerable assess` runs one dataset and one question end to end to a signed Evidence Warrant. The web layer and the remaining CLI commands are still thin contract surfaces, not a finished end-user application.
 
 ## Why this exists
 
@@ -37,7 +37,7 @@ A calculation can be correct while the conclusion is wrong: a retention lift wit
 - multi-tenant governance primitives, audit and retention controls;
 - AnswerableBench release gate, threat model and operational runbooks.
 
-The release is backed by **137 tests plus 22 subtests**, **95%+ branch-aware coverage**, strict mypy, Ruff, schema validation, requirement traceability, clean-wheel installation, CI and CodeQL.
+The release is backed by **145 tests**, **96% branch-aware coverage**, strict mypy, Ruff, schema validation, requirement traceability, clean-wheel installation, CI and CodeQL.
 
 ## Quickstart
 
@@ -94,16 +94,42 @@ print(result.decisive_findings[0].message)
 
 This returns `FUNDAMENTALLY_UNIDENTIFIABLE`; it does not invent a causal estimate.
 
-### Explore the CLI contract
+### Run a dataset and a question to an Evidence Warrant
+
+```bash
+answerable assess \
+  --data examples/campaign_retention/customers.csv \
+  --question examples/campaign_retention/question.yaml \
+  --output runs/campaign_retention
+```
+
+```text
+Assessment: asm_03188b31a996d497
+Verdict: FUNDAMENTALLY_UNIDENTIFIABLE
+Blockers: 3
+Allowed claims: 1
+Forbidden claims: 2
+```
+
+The run writes `question_contract.json`, `data_inventory.json`, `check_plan.json`, `findings.json`, `evidence_graph.json`, `verdict.json`, `repair_plan.json`, `warrant.json` and a plain-language `warrant.md` into the output directory. Exit code `0` means answerable, `2` means blocked, `3` means an invalid warrant.
+
+Every claim in the warrant is derived from checks executed against the data; no findings are supplied by hand. Verify the warrant, then tamper with it and verify again:
+
+```bash
+answerable --json warrant verify --warrant runs/campaign_retention/warrant.json
+```
+
+See [`examples/campaign_retention`](examples/campaign_retention/README.md) for the analytical trap the case demonstrates.
+
+### Explore the remaining CLI contract
 
 ```bash
 answerable --help
 answerable --json doctor
 answerable --json benchmark
-answerable --json warrant verify
 ```
 
-The v0.1.0 CLI exposes stable command and machine-readable response contracts. Dataset-to-warrant orchestration from a single CLI command is a post-v0.1 milestone.
+The other commands still expose stable command and machine-readable response contracts only.
 
 ## Core guarantee
 

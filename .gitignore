@@ -9,7 +9,10 @@ __pycache__/
 build/
 dist/
 htmlcov/
+runs/
 *.db
 *.sqlite
 *.sqlite3
 
+# Local Pi runtime state
+.atl/

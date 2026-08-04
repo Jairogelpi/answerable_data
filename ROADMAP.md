@@ -4,11 +4,12 @@ Answerable v0.1.0 is the validity-engine technical preview. The roadmap prioriti
 
 ## v0.2 — First complete workflow
 
-- One command: CSV/Parquet + question → Evidence Warrant.
-- Real CLI arguments, exit codes and JSON output.
-- Golden campaign-retention case with deterministic expected artifacts.
-- Reproducible Markdown and JSON warrant export.
-- Documentation tested from a clean environment.
+- [x] One command: CSV/Parquet + question → Evidence Warrant.
+- [x] Real CLI arguments, exit codes and JSON output.
+- [x] Golden campaign-retention case with deterministic expected artifacts.
+- [x] Reproducible Markdown and JSON warrant export.
+- [x] Documentation tested from a clean environment.
+- [ ] AnswerableBench cases executed through the runner rather than scored from supplied observations.
 
 ## v0.3 — Analyst workflow
 

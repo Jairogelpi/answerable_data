@@ -47,6 +47,15 @@ jobs:
       - name: Test with branch coverage
         run: python -m pytest
 
+      - name: Run the documented example exactly as the README shows it
+        run: |
+          answerable assess \
+            --data examples/campaign_retention/customers.csv \
+            --question examples/campaign_retention/question.yaml \
+            --output runs/campaign_retention \
+          || test $? -eq 2
+          answerable --json warrant verify --warrant runs/campaign_retention/warrant.json
+
       - name: Validate requirement traceability
         run: python scripts/check_traceability.py
 
