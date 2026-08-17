@@ -40,16 +40,19 @@ jobs:
           answerable demo causal --output /tmp/answerable-demo-causal
           answerable demo grain --output /tmp/answerable-demo-grain
           answerable demo maturity --output /tmp/answerable-demo-maturity
+          python -c "from answerable.interfaces.mcp_stdio import build_server; build_server(); print('source MCP OK')"
 
       - name: Build distributions
         run: python -m build
 
-      - name: Verify wheel installation
+      - name: Verify wheel installation and MCP extra
         run: |
           python -m venv /tmp/answerable-wheel
-          /tmp/answerable-wheel/bin/python -m pip install dist/*.whl
+          WHEEL="$(ls dist/*.whl)"
+          /tmp/answerable-wheel/bin/python -m pip install "${WHEEL}[mcp]"
           /tmp/answerable-wheel/bin/answerable doctor
           /tmp/answerable-wheel/bin/answerable demo causal --output /tmp/answerable-wheel-demo
+          /tmp/answerable-wheel/bin/python -c "from answerable.interfaces.mcp_stdio import build_server; build_server(); print('wheel MCP OK')"
 
       - name: Attest distributions
         uses: actions/attest-build-provenance@v2
