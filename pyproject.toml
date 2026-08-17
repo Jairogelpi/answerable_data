@@ -10,7 +10,18 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [{ name = "Jairo Gelpi Moreno" }]
-keywords = ["analytics", "data-quality", "causal-inference", "evidence", "ai-safety", "data-validation", "llm"]
+keywords = [
+  "analytics",
+  "data-quality",
+  "causal-inference",
+  "evidence",
+  "ai-safety",
+  "data-validation",
+  "llm",
+  "mcp",
+  "ai-agents",
+  "statistical-validity",
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -30,6 +41,10 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/Jairogelpi/answerable_data"
 Documentation = "https://github.com/Jairogelpi/answerable_data#readme"
+"MCP guide" = "https://github.com/Jairogelpi/answerable_data/blob/main/docs/MCP.md"
+"Research paper" = "https://github.com/Jairogelpi/answerable_data/blob/main/docs/paper/paper.md"
+"Benchmark protocol" = "https://github.com/Jairogelpi/answerable_data/tree/main/benchmarks/epistemic_mutations"
+Source = "https://github.com/Jairogelpi/answerable_data"
 Issues = "https://github.com/Jairogelpi/answerable_data/issues"
 Changelog = "https://github.com/Jairogelpi/answerable_data/blob/main/CHANGELOG.md"
 
