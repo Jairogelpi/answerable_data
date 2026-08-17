@@ -8,6 +8,7 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import cast
 
+from answerable.application.models import AssessmentRun
 from answerable.domain.models import Verdict
 
 COMMANDS = ("init", "frame", "plan", "execute", "inspect", "benchmark")
@@ -49,33 +50,27 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _print_run(run: object) -> None:
-    assessment_id = getattr(run, "assessment_id")
-    verdict = getattr(run, "verdict")
-    blockers = getattr(run, "blockers")
-    allowed_claims = getattr(run, "allowed_claims")
-    forbidden_claims = getattr(run, "forbidden_claims")
-    artifacts = getattr(run, "artifacts")
-    print(f"Assessment: {assessment_id}")
-    print(f"Verdict: {verdict.value}")
-    print(f"Blockers: {len(blockers)}")
-    if blockers:
-        for blocker in blockers:
+def _print_run(run: AssessmentRun) -> None:
+    print(f"Assessment: {run.assessment_id}")
+    print(f"Verdict: {run.verdict.value}")
+    print(f"Blockers: {len(run.blockers)}")
+    if run.blockers:
+        for blocker in run.blockers:
             print(f"  x {blocker.finding_id}: {blocker.message}")
     print("Supported claims:")
-    if allowed_claims:
-        for claim in allowed_claims:
+    if run.allowed_claims:
+        for claim in run.allowed_claims:
             print(f"  + {claim}")
     else:
         print("  (none)")
     print("Unsupported claims:")
-    if forbidden_claims:
-        for claim in forbidden_claims:
+    if run.forbidden_claims:
+        for claim in run.forbidden_claims:
             print(f"  - {claim}")
     else:
         print("  (none)")
     print("Artifacts:")
-    for name, path in sorted(artifacts.items()):
+    for name, path in sorted(run.artifacts.items()):
         print(f"  {name}: {path}")
 
 
