@@ -4,6 +4,8 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-17
+
 ### Added
 - Epistemic Mutation Testing (EMT) executed through the real `AssessmentRunner`.
 - 28 deterministic scenarios across 7 failure classes crossed with four mutation families for 112 paired tests.
@@ -20,15 +22,16 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 - Real Claude/Codex EMT results published with a one-sided exact binomial significance test, and `docs/paper/paper.md` write-up.
 - README sections on using Answerable as a tool call from Claude Code / Codex, and a full CLI command reference.
 - Real MCP server (`answerable mcp`, `pip install 'answerable-data[mcp]'`): all 8 tools from `docs/PRODUCT_SPEC.md` §18.3 backed by real handlers (`AssessmentRunner`, `FileInspector`, `scaffold_question`, `verify_warrant`) via the existing disclosure-scoping `MCPServer`, connectable with `claude mcp add` / `codex mcp add`.
+- Dedicated `docs/MCP.md` production integration guide for Claude Code, Codex and generic stdio MCP clients.
+- MCP package and server smoke tests in pull-request CI and tagged-release validation.
 
 ### Changed
 - AnswerableBench now executes evidence-changing benchmark cases through the runner instead of only scoring supplied observations.
 - EMT oracle classification (`_derive_action`) now keys RETRACT on the specific blocker each scenario's failure class is designed to test, not "any blocker present" — needed once every assessment also runs the blanket statistical-power check.
 - `_load()`'s outcome column uses `try_cast` instead of `cast`, so a missing/non-numeric outcome value is reported as a data-quality finding instead of crashing the run.
-
-### Planned
-- Publish locked external LLM comparison runs against the EMT protocol.
-- Expand epistemic mutation testing across joins, leakage, power, selection and metric drift.
+- README positioning now leads with deterministic claim validity, product differentiation, use cases and benchmark evidence before implementation detail.
+- `answerable-data[mcp]` is now the primary documented adoption path for AI agents.
+- PyPI project metadata now exposes MCP, research, benchmark, source, issue and changelog links.
 
 ## [0.2.0] - 2026-08-17
 
