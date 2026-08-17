@@ -284,6 +284,57 @@ def _rows(scenario: Scenario, family: MutationFamily | None) -> str:
     return "\n".join(records) + "\n"
 
 
+def blind_evidence(scenario: Scenario, family: MutationFamily | None) -> dict[str, object]:
+    """Summarise one case the way an analyst would see it, with no oracle attached.
+
+    Mirrors `_rows` at the level of detail an external agent needs to decide:
+    group sizes, the outcome split, whether covariate strata overlap, whether
+    observation windows completed, and whether rows still map one-to-one onto
+    entities. This is what ships in a frozen release's cases.jsonl.
+    """
+    size, control_positive, treated_positive = _scenario_counts(scenario)
+    if family is MutationFamily.EFFECT_ATTENUATION:
+        treated_positive = control_positive + 2
+    elif family is MutationFamily.OUTCOME_REVERSAL:
+        treated_positive = max(0, control_positive - 1)
+    invalidated = family is MutationFamily.EVIDENCE_INVALIDATION
+    failure_class = scenario.failure_class
+
+    channels: dict[str, dict[str, int]] = {
+        "unexposed": {"mixed": size},
+        "exposed": {"mixed": size},
+    }
+    windows_complete = True
+    distinct_entities = size * 2
+    if invalidated and failure_class is FailureClass.CAUSAL:
+        channels = {"unexposed": {"organic": size}, "exposed": {"paid": size}}
+    elif invalidated and failure_class is FailureClass.TEMPORAL:
+        windows_complete = False
+    elif invalidated and failure_class is FailureClass.DATA_MODEL:
+        distinct_entities = size
+
+    return {
+        "rows": size * 2,
+        "distinct_entities": distinct_entities,
+        "outcome_by_exposure": {
+            "unexposed": {"positive": control_positive, "total": size},
+            "exposed": {"positive": treated_positive, "total": size},
+        },
+        "acquisition_channel_by_exposure": channels,
+        "unmapped_noise_value": "mutated"
+        if family is MutationFamily.IRRELEVANT_NOISE
+        else "baseline",
+        "observation_window_days": 90,
+        "all_observation_windows_complete": windows_complete,
+    }
+
+
+def blind_question(failure_class: FailureClass) -> tuple[str, str]:
+    """(question, previous_conclusion) an external agent is shown for this class."""
+    question, _, definition = _FRAMING[failure_class]
+    return question, f"The exposure increased observed {definition.lower()}."
+
+
 def _run_case(root: Path, scenario: Scenario, family: MutationFamily | None) -> AssessmentRun:
     label = "baseline" if family is None else family.value
     case_dir = root / scenario.scenario_id / label
@@ -519,6 +570,8 @@ __all__ = [
     "Scenario",
     "benchmark_pairs",
     "benchmark_scenarios",
+    "blind_evidence",
+    "blind_question",
     "evaluate_agent_matrix",
     "expected_blocker",
     "report_to_dict",

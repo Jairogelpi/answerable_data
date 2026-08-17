@@ -94,6 +94,41 @@ python scripts/score_mutation_agents.py runs/emt-agent-results.jsonl \
   --output runs/emt-agent-report.json
 ```
 
+### Running real CLI agents (no API keys)
+
+`scripts/run_agent_harness.py` drives the frozen `emt-v1` cases through the
+`claude` and `codex` CLIs already authenticated on this machine, spending the
+operator's own subscription rather than a metered API key:
+
+```bash
+python scripts/run_agent_harness.py \
+  --cases benchmarks/releases/emt-v1/cases.jsonl \
+  --output runs/emt-agents \
+  --agents claude,codex \
+  --repetitions 2
+python scripts/score_mutation_agents.py runs/emt-agents/decisions.jsonl
+```
+
+It writes `decisions.jsonl` (scoreable directly) and `raw.jsonl` — one record
+per call with the full prompt, raw response, resolved model, timestamp,
+latency, token usage, cost (where the CLI reports it) and the case hash, so a
+run is independently auditable.
+
+Two things worth knowing before trusting a run:
+
+- **Only 2 of the 3 agent slots are filled.** `evaluate_agent_matrix` requires
+  three independently identified agents; with `claude,codex` only,
+  `matrix_complete` is correctly `False` and the release-gate exit code is
+  reserved. A third agent (e.g. Gemini) needs its own CLI wired into
+  `AGENT_RUNNERS`.
+- **Both CLIs are coding-agent shells, not raw model endpoints.** The harness
+  strips that persona for a fair judgment call — `claude` runs with
+  `--system-prompt` (replacing, not appending to, the default persona) and
+  `--setting-sources ""` (no CLAUDE.md/hooks/memory); both agents run from a
+  scratch directory outside the repo via `--scratch-dir`. Skipping either
+  guard reliably produces "no data given, point me to a file" instead of a
+  judgment, because the CLI still believes it's a coding assistant.
+
 The evaluator rejects an incomplete matrix. For each agent it reports:
 
 - paired oracle accuracy;

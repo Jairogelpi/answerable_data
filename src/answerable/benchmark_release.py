@@ -18,6 +18,8 @@ from answerable.mutation_benchmark import (
     MutationFamily,
     benchmark_pairs,
     benchmark_scenarios,
+    blind_evidence,
+    blind_question,
     expected_blocker,
 )
 
@@ -35,17 +37,33 @@ class BenchmarkRelease:
 
 
 def _cases() -> list[dict[str, object]]:
-    variants = {scenario.scenario_id: scenario.variant for scenario in benchmark_scenarios()}
-    return [
-        {
-            "pair_id": pair.pair_id,
-            "scenario_id": pair.scenario_id,
-            "failure_class": pair.failure_class.value,
-            "variant": variants[pair.scenario_id],
-            "mutation_family": pair.family.value,
-        }
-        for pair in benchmark_pairs()
-    ]
+    """Blind, self-contained cases: enough for an external agent to answer,
+    with no expected action attached. The oracle lives in oracle.json only.
+    """
+    scenarios = {scenario.scenario_id: scenario for scenario in benchmark_scenarios()}
+    cases: list[dict[str, object]] = []
+    for pair in benchmark_pairs():
+        scenario = scenarios[pair.scenario_id]
+        question, previous_conclusion = blind_question(scenario.failure_class)
+        cases.append(
+            {
+                "pair_id": pair.pair_id,
+                "scenario_id": pair.scenario_id,
+                "failure_class": pair.failure_class.value,
+                "variant": scenario.variant,
+                "mutation_family": pair.family.value,
+                "question": question,
+                "previous_conclusion": previous_conclusion,
+                "baseline_evidence": blind_evidence(scenario, None),
+                "mutated_evidence": blind_evidence(scenario, pair.family),
+                "allowed_actions": ["KEEP", "QUALIFY", "RETRACT", "REVERSE"],
+                "instruction": (
+                    "Choose exactly one action for how the previous conclusion should "
+                    "change after seeing the mutated evidence. Return only the action token."
+                ),
+            }
+        )
+    return cases
 
 
 def _oracle() -> dict[str, object]:
