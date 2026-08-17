@@ -122,6 +122,20 @@ The report is written to `mutation_report.json` and includes the baseline/mutate
 
 For external model comparison, the evaluator requires a complete **3 agents × 2 repetitions × 48 pairs = 288 decisions** matrix and reports paired oracle accuracy, unsafe-`KEEP` rate and repeat consistency. Nondeterministic external model runs are deliberately kept outside the package release gate. The locked protocol is documented in [`benchmarks/epistemic_mutations/`](benchmarks/epistemic_mutations/).
 
+### Answerable vs real LLM agents
+
+Run through actual `claude` and `codex` CLI calls against the frozen `emt-v1` case set — not simulated, 192 real decisions, full prompts and responses in [`benchmarks/epistemic_mutations/results/2026-08-17-claude-codex/`](benchmarks/epistemic_mutations/results/2026-08-17-claude-codex/):
+
+<img src="benchmarks/epistemic_mutations/results/2026-08-17-claude-codex/comparison.svg" alt="Answerable scores 100% accuracy and 100% RETRACT rate; Codex and Claude trail on both, especially RETRACT" width="640">
+
+| | Answerable | Codex | Claude |
+| --- | --- | --- | --- |
+| Overall accuracy | **100%** | 83.3% | 77.1% |
+| Unsafe KEEP | 0% | 0% | 0% |
+| RETRACT correct on evidence invalidation (n=24) | **24/24** | 8/24 | 2/24 |
+
+Both models are safe in the sense that matters most (0% unsafe `KEEP` — neither ever keeps a conclusion its own evidence no longer supports), but when the evidence is invalidated, both systematically answer `QUALIFY` instead of `RETRACT`: 16/16 of Codex's errors and 22/22 of Claude's land on that one wrong answer, not spread across the other options. A one-sided exact binomial test against a uniform-among-wrong-answers null puts the probability of that concentration by chance at 2.3 × 10⁻⁸ (Codex) and 3.2 × 10⁻¹¹ (Claude) — see the [full write-up](benchmarks/epistemic_mutations/results/2026-08-17-claude-codex/README.md) for the exact test, sample-size caveats (n=24 per model, 2 models — Gemini's free tier couldn't sustain a full run), and how to reproduce it. The methodology, threats to validity, and related work are written up in [`docs/paper/paper.md`](docs/paper/paper.md).
+
 ## Assess your own data
 
 ```bash

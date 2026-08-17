@@ -1,0 +1,66 @@
+{
+  "agents": {
+    "answerable": {
+      "accuracy": 1.0,
+      "consistency": 1.0,
+      "overreaction_rate": 0.0,
+      "unsafe_keep_rate": 0.0
+    },
+    "claude": {
+      "accuracy": 0.7708333333333334,
+      "consistency": 0.9583333333333334,
+      "overreaction_rate": 0.0,
+      "unsafe_keep_rate": 0.0
+    },
+    "codex": {
+      "accuracy": 0.8333333333333334,
+      "consistency": 1.0,
+      "overreaction_rate": 0.0,
+      "unsafe_keep_rate": 0.0
+    }
+  },
+  "decision_counts": {
+    "answerable": 96,
+    "claude": 96,
+    "codex": 96
+  },
+  "evidence_invalidation_analysis": [
+    {
+      "agent_id": "answerable",
+      "dominant_wrong_action": null,
+      "dominant_wrong_count": 0,
+      "n": 24,
+      "p_value_dominant_direction": null,
+      "retract_correct": 24,
+      "retract_rate": 1.0,
+      "wrong_by_action": {},
+      "wrong_total": 0
+    },
+    {
+      "agent_id": "claude",
+      "dominant_wrong_action": "QUALIFY",
+      "dominant_wrong_count": 22,
+      "n": 24,
+      "p_value_dominant_direction": 3.186635545324931e-11,
+      "retract_correct": 2,
+      "retract_rate": 0.08333333333333333,
+      "wrong_by_action": {
+        "QUALIFY": 22
+      },
+      "wrong_total": 22
+    },
+    {
+      "agent_id": "codex",
+      "dominant_wrong_action": "QUALIFY",
+      "dominant_wrong_count": 16,
+      "n": 24,
+      "p_value_dominant_direction": 2.3230573125418753e-08,
+      "retract_correct": 8,
+      "retract_rate": 0.3333333333333333,
+      "wrong_by_action": {
+        "QUALIFY": 16
+      },
+      "wrong_total": 16
+    }
+  ]
+}
