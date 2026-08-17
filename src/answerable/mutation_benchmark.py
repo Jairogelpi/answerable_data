@@ -104,7 +104,7 @@ def benchmark_pairs() -> tuple[MutationPair, ...]:
 
 
 def _question_yaml(scenario_id: str) -> str:
-    return f'''question_id: q_{scenario_id.replace("-", "_")}
+    return f"""question_id: q_{scenario_id.replace("-", "_")}
 raw_question: "Did exposure increase 90-day retention?"
 normalized_question: "Did exposure increase 90-day retention?"
 language: en
@@ -146,7 +146,7 @@ claims:
     claim_class: descriptive
   - text: "Exposure caused higher retention."
     claim_class: causal
-'''
+"""
 
 
 def _scenario_counts(scenario: int) -> tuple[int, int, int]:
@@ -180,9 +180,7 @@ def _rows(scenario: int, family: MutationFamily | None) -> str:
     return "\n".join(records) + "\n"
 
 
-def _run_case(
-    root: Path, scenario: int, family: MutationFamily | None
-) -> AssessmentRun:
+def _run_case(root: Path, scenario: int, family: MutationFamily | None) -> AssessmentRun:
     label = "baseline" if family is None else family.value
     case_dir = root / f"scenario-{scenario:02d}" / label
     input_dir = case_dir / "input"
@@ -241,9 +239,7 @@ def _ratio(correct: int, total: int) -> float:
 
 def run_mutation_benchmark(output_directory: Path) -> MutationBenchmarkReport:
     pairs = benchmark_pairs()
-    baselines = {
-        scenario: _run_case(output_directory, scenario, None) for scenario in range(1, 13)
-    }
+    baselines = {scenario: _run_case(output_directory, scenario, None) for scenario in range(1, 13)}
     observations: list[MutationObservation] = []
     for pair in pairs:
         scenario = int(pair.scenario_id.rsplit("-", 1)[1])
@@ -346,7 +342,9 @@ def evaluate_agent_matrix(
             repetition: {item.pair_id: item.action for item in own if item.repetition == repetition}
             for repetition in repetitions
         }
-        complete = repetitions == {1, 2} and all(set(run) == set(expected) for run in by_run.values())
+        complete = repetitions == {1, 2} and all(
+            set(run) == set(expected) for run in by_run.values()
+        )
         matrix_complete = matrix_complete and complete
         correct = sum(expected.get(item.pair_id) is item.action for item in own)
         unsafe = sum(
