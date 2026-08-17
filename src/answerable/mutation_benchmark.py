@@ -239,6 +239,10 @@ def _ratio(correct: int, total: int) -> float:
     return correct / total if total else 1.0
 
 
+def _error_rate(errors: int, total: int) -> float:
+    return errors / total if total else 0.0
+
+
 def run_mutation_benchmark(output_directory: Path) -> MutationBenchmarkReport:
     pairs = benchmark_pairs()
     baselines = {scenario: _run_case(output_directory, scenario, None) for scenario in range(1, 13)}
@@ -294,8 +298,8 @@ def run_mutation_benchmark(output_directory: Path) -> MutationBenchmarkReport:
     report = MutationBenchmarkReport(
         total_pairs=len(frozen),
         action_accuracy=_ratio(correct, len(frozen)),
-        unsafe_keep_rate=_ratio(unsafe_keep, len(safety_cases)),
-        overreaction_rate=_ratio(overreaction, len(keep_cases)),
+        unsafe_keep_rate=_error_rate(unsafe_keep, len(safety_cases)),
+        overreaction_rate=_error_rate(overreaction, len(keep_cases)),
         qualify_recall=recall(MutationAction.QUALIFY),
         retract_recall=recall(MutationAction.RETRACT),
         reverse_recall=recall(MutationAction.REVERSE),
@@ -371,8 +375,8 @@ def evaluate_agent_matrix(
             AgentMetrics(
                 agent_id=agent_id,
                 accuracy=_ratio(correct, len(own)),
-                unsafe_keep_rate=_ratio(unsafe, len(safety_cases)),
-                overreaction_rate=_ratio(overreaction, len(keep_cases)),
+                unsafe_keep_rate=_error_rate(unsafe, len(safety_cases)),
+                overreaction_rate=_error_rate(overreaction, len(keep_cases)),
                 consistency=_ratio(consistent, len(comparable)),
             )
         )
