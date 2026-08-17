@@ -1,0 +1,41 @@
+question_id: q_demo_maturity
+raw_question: "Did campaign exposure increase 90-day retention?"
+normalized_question: "Did campaign exposure increase 90-day retention?"
+language: en
+analysis_type: causal
+unit_of_analysis: customer
+population:
+  description: "Customers in the immature-cohort demonstration"
+  inclusion: ["rows in the demonstration"]
+outcome:
+  metric_id: retention_90d
+  definition: "Share of customers still active 90 days after acquisition"
+  value_type: ratio
+  numerator: retained_90d
+  denominator: customer_id
+time:
+  observation_start: "2025-01-01T00:00:00+00:00"
+  observation_end: "2025-06-30T00:00:00+00:00"
+data:
+  entity_column: customer_id
+  event_time_column: acquisition_date
+  treatment_column: campaign_exposed
+  outcome_column: retained_90d
+  covariate_columns: ["acquisition_channel"]
+  observation_window_days: 90
+  analysis_end: "2025-06-30T00:00:00+00:00"
+causal:
+  treatment: campaign_exposed
+  outcome: retained_90d
+  population: "Customers in the immature-cohort demonstration"
+  estimand: "Average treatment effect of campaign exposure on 90-day retention"
+  strategy: regression_adjustment
+  adjustment_set: ["acquisition_channel"]
+  assumptions: ["Exposure and retention are recorded without error."]
+  falsification_checks: []
+  sensitivity_checks: []
+claims:
+  - text: "Exposed customers had higher observed 90-day retention than unexposed customers."
+    claim_class: descriptive
+  - text: "The campaign caused higher 90-day retention."
+    claim_class: causal
