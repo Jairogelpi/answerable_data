@@ -55,7 +55,7 @@ jobs:
           /tmp/answerable-wheel/bin/python -c "from answerable.interfaces.mcp_stdio import build_server; build_server(); print('wheel MCP OK')"
 
       - name: Attest distributions
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: "dist/*"
 
