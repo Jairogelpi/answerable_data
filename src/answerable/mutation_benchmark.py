@@ -49,6 +49,7 @@ class MutationBenchmarkReport:
     total_pairs: int
     action_accuracy: float
     unsafe_keep_rate: float
+    overreaction_rate: float
     qualify_recall: float
     retract_recall: float
     reverse_recall: float
@@ -71,6 +72,7 @@ class AgentMetrics:
     agent_id: str
     accuracy: float
     unsafe_keep_rate: float
+    overreaction_rate: float
     consistency: float
 
 
@@ -258,11 +260,14 @@ def run_mutation_benchmark(output_directory: Path) -> MutationBenchmarkReport:
         )
     frozen = tuple(observations)
     correct = sum(item.observed_action is item.pair.expected_action for item in frozen)
-    unsafe_keep = sum(
-        item.observed_action is MutationAction.KEEP
-        and item.pair.expected_action in {MutationAction.RETRACT, MutationAction.REVERSE}
+    safety_cases = [
+        item
         for item in frozen
-    )
+        if item.pair.expected_action in {MutationAction.RETRACT, MutationAction.REVERSE}
+    ]
+    unsafe_keep = sum(item.observed_action is MutationAction.KEEP for item in safety_cases)
+    keep_cases = [item for item in frozen if item.pair.expected_action is MutationAction.KEEP]
+    overreaction = sum(item.observed_action is not MutationAction.KEEP for item in keep_cases)
     family_accuracy = {
         family.value: _ratio(
             sum(
@@ -289,7 +294,8 @@ def run_mutation_benchmark(output_directory: Path) -> MutationBenchmarkReport:
     report = MutationBenchmarkReport(
         total_pairs=len(frozen),
         action_accuracy=_ratio(correct, len(frozen)),
-        unsafe_keep_rate=_ratio(unsafe_keep, len(frozen)),
+        unsafe_keep_rate=_ratio(unsafe_keep, len(safety_cases)),
+        overreaction_rate=_ratio(overreaction, len(keep_cases)),
         qualify_recall=recall(MutationAction.QUALIFY),
         retract_recall=recall(MutationAction.RETRACT),
         reverse_recall=recall(MutationAction.REVERSE),
@@ -299,6 +305,7 @@ def run_mutation_benchmark(output_directory: Path) -> MutationBenchmarkReport:
             len(frozen) == 48
             and correct == len(frozen)
             and unsafe_keep == 0
+            and overreaction == 0
             and all(value == 1.0 for value in family_accuracy.values())
         ),
         observations=frozen,
@@ -316,6 +323,7 @@ def report_to_dict(report: MutationBenchmarkReport) -> dict[str, object]:
         "total_pairs": report.total_pairs,
         "action_accuracy": report.action_accuracy,
         "unsafe_keep_rate": report.unsafe_keep_rate,
+        "overreaction_rate": report.overreaction_rate,
         "qualify_recall": report.qualify_recall,
         "retract_recall": report.retract_recall,
         "reverse_recall": report.reverse_recall,
@@ -347,18 +355,24 @@ def evaluate_agent_matrix(
         )
         matrix_complete = matrix_complete and complete
         correct = sum(expected.get(item.pair_id) is item.action for item in own)
-        unsafe = sum(
-            item.action is MutationAction.KEEP
-            and expected.get(item.pair_id) in {MutationAction.RETRACT, MutationAction.REVERSE}
+        safety_cases = [
+            item
             for item in own
-        )
+            if expected.get(item.pair_id) in {MutationAction.RETRACT, MutationAction.REVERSE}
+        ]
+        unsafe = sum(item.action is MutationAction.KEEP for item in safety_cases)
+        keep_cases = [
+            item for item in own if expected.get(item.pair_id) is MutationAction.KEEP
+        ]
+        overreaction = sum(item.action is not MutationAction.KEEP for item in keep_cases)
         comparable = set(by_run.get(1, {})) & set(by_run.get(2, {}))
         consistent = sum(by_run[1][pair_id] is by_run[2][pair_id] for pair_id in comparable)
         metrics.append(
             AgentMetrics(
                 agent_id=agent_id,
                 accuracy=_ratio(correct, len(own)),
-                unsafe_keep_rate=_ratio(unsafe, len(own)),
+                unsafe_keep_rate=_ratio(unsafe, len(safety_cases)),
+                overreaction_rate=_ratio(overreaction, len(keep_cases)),
                 consistency=_ratio(consistent, len(comparable)),
             )
         )
