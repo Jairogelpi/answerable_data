@@ -107,14 +107,16 @@ def _run_claude(prompt: str, *, model: str, case_dir: Path) -> tuple[str | None,
         input=prompt,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=_CALL_TIMEOUT_SECONDS,
         check=False,
         cwd=case_dir,
     )
     try:
-        payload = json.loads(completed.stdout)
+        payload = json.loads(completed.stdout or "")
     except json.JSONDecodeError:
-        return None, completed.stdout + completed.stderr
+        return None, (completed.stdout or "") + (completed.stderr or "")
     text = str(payload.get("result", ""))
     return parse_action(text), text
 
@@ -135,12 +137,14 @@ def _run_codex(prompt: str, *, model: str | None, case_dir: Path) -> tuple[str |
         input=prompt,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=_CALL_TIMEOUT_SECONDS,
         check=False,
         cwd=case_dir,
     )
     text = ""
-    for line in completed.stdout.splitlines():
+    for line in (completed.stdout or "").splitlines():
         line = line.strip()
         if not line.startswith("{"):
             continue
@@ -152,7 +156,7 @@ def _run_codex(prompt: str, *, model: str | None, case_dir: Path) -> tuple[str |
             item = event.get("item") or {}
             if item.get("type") == "agent_message":
                 text = str(item.get("text", ""))
-    return parse_action(text), text or completed.stderr
+    return parse_action(text), text or (completed.stderr or "")
 
 
 _RUNNERS = {"claude": _run_claude, "codex": _run_codex}

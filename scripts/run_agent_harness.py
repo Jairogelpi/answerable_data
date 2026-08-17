@@ -130,15 +130,19 @@ def _run_claude(prompt: str, *, model: str, scratch_dir: Path) -> AgentCallResul
         input=prompt,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=_CALL_TIMEOUT_SECONDS,
         check=False,
         cwd=scratch_dir,
     )
     latency_ms = int((time.perf_counter() - start) * 1000)
     try:
-        payload = json.loads(completed.stdout)
+        payload = json.loads(completed.stdout or "")
     except json.JSONDecodeError:
-        return AgentCallResult(None, completed.stdout + completed.stderr, None, latency_ms, {})
+        return AgentCallResult(
+            None, (completed.stdout or "") + (completed.stderr or ""), None, latency_ms, {}
+        )
     text = str(payload.get("result", ""))
     model_usage = payload.get("modelUsage") or {}
     resolved_model = next(iter(model_usage), None)
@@ -176,6 +180,8 @@ def _run_codex(prompt: str, *, model: str | None, scratch_dir: Path) -> AgentCal
         input=prompt,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=_CALL_TIMEOUT_SECONDS,
         check=False,
         cwd=scratch_dir,
@@ -184,7 +190,7 @@ def _run_codex(prompt: str, *, model: str | None, scratch_dir: Path) -> AgentCal
     text = ""
     usage: dict[str, object] = {}
     thread_id = None
-    for line in completed.stdout.splitlines():
+    for line in (completed.stdout or "").splitlines():
         line = line.strip()
         if not line.startswith("{"):
             continue
@@ -202,7 +208,7 @@ def _run_codex(prompt: str, *, model: str | None, scratch_dir: Path) -> AgentCal
             usage = event.get("usage") or {}
     metadata = {"thread_id": thread_id, "usage": usage, "model_requested": model}
     return AgentCallResult(
-        parse_action(text), text or completed.stderr, model, latency_ms, metadata
+        parse_action(text), text or (completed.stderr or ""), model, latency_ms, metadata
     )
 
 
