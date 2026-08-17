@@ -22,7 +22,7 @@ def test_golden_demo_surfaces_expected_blocker(
 
     assert case is CASES[case_name]
     assert expected_signal in {item.finding_id for item in run.blockers}
-    assert run.artifacts["warrant_json"].is_file()
+    assert run.artifacts["warrant"].is_file()
     assert run.artifacts["warrant_markdown"].is_file()
 
 
