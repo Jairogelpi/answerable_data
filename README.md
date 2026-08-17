@@ -55,7 +55,8 @@ That distinction is the product: **a number can be correct while the conclusion 
 
 ### PyPI
 
-The tagged release workflow publishes distributions through PyPI Trusted Publishing:
+Distributions are published through PyPI Trusted Publishing, with build provenance
+attested on every tagged release:
 
 ```bash
 python -m pip install answerable-data
@@ -63,7 +64,7 @@ answerable doctor
 answerable demo
 ```
 
-Until the first public tag is published, install the current source checkout:
+### From source
 
 ```bash
 git clone https://github.com/Jairogelpi/answerable_data.git
