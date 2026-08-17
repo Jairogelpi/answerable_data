@@ -96,6 +96,16 @@ case set is frozen as `emt-v1`
 `cases.jsonl` is self-contained: full evidence summaries, ready to hand to
 an external agent, no separate data-generation step required to reproduce.
 
+**Update, post-publication:** a second frozen release, `emt-v2`
+([`benchmarks/releases/emt-v2/`](../../benchmarks/releases/emt-v2/)),
+extends the case set from 3 failure classes to 7 (adding `predictive`,
+`statistical`, `metric_semantics`, `missingness` — 112 pairs total), each
+backed by its own detector in the engine rather than a scenario-specific
+shortcut. The §5 results below are unchanged and remain scored against
+`emt-v1`, exactly as run; they have not yet been re-run against `emt-v2`. Per
+the freeze rule, `emt-v1` stays published and immutable — `emt-v2` is a new
+release, not a revision of this one.
+
 ## 4. External-agent protocol
 
 Three independently identified agents are meant to run every case twice

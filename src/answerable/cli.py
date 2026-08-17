@@ -11,7 +11,7 @@ from typing import cast
 from answerable.application.models import AssessmentRun
 from answerable.domain.models import Verdict
 
-COMMANDS = ("init", "frame", "plan", "execute", "inspect")
+COMMANDS = ("frame", "plan", "execute", "inspect")
 _CLEAN_VERDICTS = frozenset({Verdict.ANSWERABLE, Verdict.ANSWERABLE_WITH_ASSUMPTIONS})
 EXIT_BLOCKED = 2
 EXIT_INVALID_WARRANT = 3
@@ -29,6 +29,12 @@ def build_parser() -> argparse.ArgumentParser:
         subparsers.add_parser(command)
 
     subparsers.add_parser("doctor", help="Check that the local Answerable runtime is ready.")
+
+    init = subparsers.add_parser(
+        "init", help="Scaffold a question.yaml by inspecting a data file's columns."
+    )
+    init.add_argument("--data", type=Path, required=True)
+    init.add_argument("--output", type=Path, default=Path("question.yaml"))
 
     demo = subparsers.add_parser("demo", help="Run a built-in adversarial analytical case.")
     demo.add_argument("case", nargs="?", choices=("causal", "grain", "maturity"), default="causal")
@@ -193,6 +199,44 @@ def _benchmark(args: argparse.Namespace, *, json_output: bool) -> tuple[int, dic
     return (0 if report.release_pass else EXIT_BENCHMARK_FAILED), payload
 
 
+def _init(args: argparse.Namespace, *, json_output: bool) -> tuple[int, dict[str, object]]:
+    from answerable.application.spec_scaffold import guess_roles, scaffold_question
+    from answerable.ingestion.files import FileInspector
+
+    inspector = FileInspector()
+    try:
+        snapshot = inspector.inspect(args.data)
+    finally:
+        inspector.close()
+    roles = guess_roles(snapshot)
+    args.output.write_text(scaffold_question(args.data), encoding="utf-8")
+    payload: dict[str, object] = {
+        "data": str(args.data),
+        "output": str(args.output),
+        "guessed": {
+            "entity_column": roles.entity_column,
+            "event_time_column": roles.event_time_column,
+            "treatment_column": roles.treatment_column,
+            "outcome_column": roles.outcome_column,
+            "covariate_columns": list(roles.covariate_columns),
+        },
+        "unresolved": list(roles.unresolved),
+    }
+    if not json_output:
+        print(f"Scaffolded {args.output} from {args.data}")
+        for role in ("entity_column", "event_time_column", "treatment_column", "outcome_column"):
+            value = payload["guessed"][role]  # type: ignore[index]
+            marker = "+" if value else "x"
+            print(f"  {marker} {role}: {value or 'not guessed -- edit by hand'}")
+        if roles.covariate_columns:
+            print(f"  + covariate_columns: {', '.join(roles.covariate_columns)}")
+        print(
+            "Edit the TODO fields, then: answerable assess --data ... --question "
+            f"{args.output} --output runs/first"
+        )
+    return 0, payload
+
+
 def _doctor() -> tuple[int, dict[str, object]]:
     checks: dict[str, str] = {}
     for module in ("duckdb", "sqlglot", "yaml"):
@@ -223,7 +267,9 @@ def _verify(path: Path) -> tuple[int, dict[str, object]]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if args.command == "assess":
+    if args.command == "init":
+        code, payload = _init(args, json_output=args.json_output)
+    elif args.command == "assess":
         code, payload = _assess(args, json_output=args.json_output)
     elif args.command == "demo":
         code, payload = _demo(args, json_output=args.json_output)
@@ -248,6 +294,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             marker = "+" if status == "ok" else "x"
             print(f"{marker} {dependency}: {status}")
         print(f"Status: {payload['status']}")
-    elif args.command not in {"assess", "demo", "benchmark"}:
+    elif args.command not in {"assess", "demo", "benchmark", "init"}:
         print(f"answerable {args.command}: ok")
     return code

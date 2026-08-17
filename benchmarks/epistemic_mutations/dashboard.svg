@@ -24,7 +24,7 @@
   <text x="24" y="40" class="title">ANSWERABLEBENCH</text>
   <text x="24" y="60" class="subtitle">Can an analytical system change its mind when evidence changes?</text>
 
-  <text x="24" y="118" class="headline">48 / 48</text>
+  <text x="24" y="118" class="headline">112 / 112</text>
   <text x="24" y="136" class="headline-label">mutations passed</text>
 
   <text x="220" y="112" class="stat-value">0%</text>
@@ -33,12 +33,12 @@
   <text x="380" y="112" class="stat-value">0%</text>
   <text x="380" y="130" class="stat-label">Overreaction</text>
 
-  <text x="540" y="112" class="stat-value">c0089ed97707</text>
+  <text x="540" y="112" class="stat-value">67c76004b35a</text>
   <text x="540" y="130" class="stat-label">Reproducibility hash</text>
 
   <line x1="24" y1="160" x2="616" y2="160" stroke="var(--border)"/>
   <text x="24" y="185" class="bar-label">Recall by action</text>
   <text x="24" y="250" class="bar-label">KEEP</text><rect x="190" y="236" width="380" height="16" rx="3" class="track"/><rect x="190" y="236" width="380" height="16" rx="3" class="fill"/><text x="580" y="249" class="bar-pct">100%</text><text x="24" y="284" class="bar-label">QUALIFY</text><rect x="190" y="270" width="380" height="16" rx="3" class="track"/><rect x="190" y="270" width="380" height="16" rx="3" class="fill"/><text x="580" y="283" class="bar-pct">100%</text><text x="24" y="318" class="bar-label">RETRACT</text><rect x="190" y="304" width="380" height="16" rx="3" class="track"/><rect x="190" y="304" width="380" height="16" rx="3" class="fill"/><text x="580" y="317" class="bar-pct">100%</text><text x="24" y="352" class="bar-label">REVERSE</text><rect x="190" y="338" width="380" height="16" rx="3" class="track"/><rect x="190" y="338" width="380" height="16" rx="3" class="fill"/><text x="580" y="351" class="bar-pct">100%</text>
 
-  <text x="24" y="418" class="footer">RELEASE GATE: PASS · emt-v1 · 48 paired mutation tests</text>
+  <text x="24" y="418" class="footer">RELEASE GATE: PASS · emt-v1 · 112 paired mutation tests</text>
 </svg>

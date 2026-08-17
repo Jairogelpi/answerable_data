@@ -22,6 +22,9 @@ class DataMapping:
     observation_window_days: int
     analysis_end: datetime
     covariate_columns: tuple[str, ...] = ()
+    prediction_time_column: str | None = None
+    feature_available_time_column: str | None = None
+    metric_definition_column: str | None = None
 
     def __post_init__(self) -> None:
         if self.observation_window_days <= 0:

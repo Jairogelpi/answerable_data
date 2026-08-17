@@ -47,7 +47,12 @@ class CampaignRetentionWorkflowTest(unittest.TestCase):
             self.assertEqual(run.verdict, Verdict.FUNDAMENTALLY_UNIDENTIFIABLE)
             self.assertEqual(
                 {item.finding_id for item in run.blockers},
-                {"immature_cohort", "positivity_violation", "causal_identification_failure"},
+                {
+                    "immature_cohort",
+                    "positivity_violation",
+                    "causal_identification_failure",
+                    "insufficient_power",
+                },
             )
             self.assertEqual(len(run.allowed_claims), 1)
             self.assertIn("Observed", run.allowed_claims[0])

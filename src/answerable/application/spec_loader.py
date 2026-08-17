@@ -77,6 +77,9 @@ def load_spec(path: Path) -> AssessmentSpec:
             observation_window_days=int(mapping["observation_window_days"]),
             analysis_end=_time(mapping["analysis_end"]),
             covariate_columns=tuple(mapping.get("covariate_columns", ())),
+            prediction_time_column=mapping.get("prediction_time_column"),
+            feature_available_time_column=mapping.get("feature_available_time_column"),
+            metric_definition_column=mapping.get("metric_definition_column"),
         ),
         causal=CausalContract(
             treatment=causal["treatment"],

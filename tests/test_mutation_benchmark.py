@@ -15,20 +15,22 @@ from answerable.mutation_benchmark import (
 )
 
 
-def test_manifest_has_twelve_scenarios_and_forty_eight_pairs() -> None:
+def test_manifest_has_28_scenarios_and_112_pairs_across_seven_classes() -> None:
     pairs = benchmark_pairs()
 
-    assert len(pairs) == 48
-    assert len({pair.scenario_id for pair in pairs}) == 12
+    assert len(pairs) == 112
+    assert len({pair.scenario_id for pair in pairs}) == 28
+    assert {pair.failure_class for pair in pairs} == set(FailureClass)
+    assert len(FailureClass) == 7
     assert {pair.family for pair in pairs} == set(MutationFamily)
     assert {pair.expected_action for pair in pairs} == set(MutationAction)
-    assert len({pair.pair_id for pair in pairs}) == 48
+    assert len({pair.pair_id for pair in pairs}) == 112
 
 
 def test_scenarios_spread_evenly_across_failure_classes() -> None:
     scenarios = benchmark_scenarios()
 
-    assert len(scenarios) == 12
+    assert len(scenarios) == 28
     assert {scenario.failure_class for scenario in scenarios} == set(FailureClass)
     for failure_class in FailureClass:
         matching = [item for item in scenarios if item.failure_class is failure_class]
@@ -39,7 +41,7 @@ def test_scenarios_spread_evenly_across_failure_classes() -> None:
 def test_mutation_benchmark_executes_runner_and_passes_release_gate(tmp_path: Path) -> None:
     report = run_mutation_benchmark(tmp_path / "bench")
 
-    assert report.total_pairs == 48
+    assert report.total_pairs == 112
     assert report.action_accuracy == 1.0
     assert report.unsafe_keep_rate == 0.0
     assert report.overreaction_rate == 0.0
@@ -48,6 +50,7 @@ def test_mutation_benchmark_executes_runner_and_passes_release_gate(tmp_path: Pa
     assert report.reverse_recall == 1.0
     assert set(report.family_accuracy.values()) == {1.0}
     assert set(report.class_accuracy.values()) == {1.0}
+    assert len(report.class_accuracy) == 7
     assert report.release_pass
     assert len(report.reproducibility_hash) == 64
     assert (tmp_path / "bench" / "mutation_report.json").is_file()
@@ -57,7 +60,7 @@ def test_mutation_benchmark_executes_runner_and_passes_release_gate(tmp_path: Pa
         for item in report.observations
         if item.pair.family is MutationFamily.EVIDENCE_INVALIDATION
     ]
-    assert len(invalidated) == 12
+    assert len(invalidated) == 28
     # Each failure class must be blocked by its own mechanism, not a shared one.
     for item in invalidated:
         assert expected_blocker(item.pair.failure_class) in item.blockers
@@ -87,7 +90,7 @@ def test_agent_matrix_requires_three_agents_two_repetitions_and_all_pairs() -> N
     report = evaluate_agent_matrix(decisions, pairs)
 
     assert report.matrix_complete
-    assert report.decision_count == 288
+    assert report.decision_count == 672
     assert all(item.accuracy == 1.0 for item in report.agents)
     assert all(item.unsafe_keep_rate == 0.0 for item in report.agents)
     assert all(item.overreaction_rate == 0.0 for item in report.agents)

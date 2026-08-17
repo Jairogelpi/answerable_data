@@ -31,10 +31,14 @@ from answerable.evidence.verdict import (
 )
 from answerable.ingestion.files import FileInspector
 from answerable.ingestion.models import DataAssetSnapshot
+from answerable.quality.checks import DataQualityAssessor
 from answerable.quality.models import Finding, Severity
 from answerable.quality.temporal import TemporalAssessor, TemporalContext
 from answerable.reports.markdown import render_markdown
+from answerable.statistics.validity import StatisticalAssessor
 from answerable.warrants.service import WarrantIssuer
+
+_INFORMATIVE_MISSINGNESS_THRESHOLD = 0.15
 
 _CATEGORY = {
     "causal_identification_failure": "identification",
@@ -46,6 +50,9 @@ _CATEGORY = {
     "prediction_leakage": "data_integrity",
     "duplicate_entities": "data_integrity",
     "ambiguous_grain": "data_integrity",
+    "insufficient_power": "missing_evidence",
+    "definition_change": "data_integrity",
+    "informative_missingness": "missing_evidence",
 }
 _ALL_CLAIMS = frozenset(
     {
@@ -54,6 +61,7 @@ _ALL_CLAIMS = frozenset(
         "invalid_event_time",
         "timezone_ambiguity",
         "ambiguous_grain",
+        "definition_change",
     }
 )
 _DESIGN_IMPOSSIBLE = frozenset({"causal_identification_failure", "positivity_violation"})
@@ -81,6 +89,31 @@ _REPAIR = {
         "Censored outcomes are not missing at random.",
         True,
         "extend the label collection window",
+    ),
+    "prediction_leakage": (
+        "Features available only after the prediction time.",
+        "A model trained on post-prediction features cannot be deployed honestly.",
+        False,
+        "recompute features using only information available at prediction time",
+    ),
+    "insufficient_power": (
+        "A sample large enough to detect the claimed effect at the target power.",
+        "An underpowered comparison cannot distinguish a real effect from noise.",
+        True,
+        "collect more observations per group, or accept a wider confidence interval",
+    ),
+    "definition_change": (
+        "A single, stable metric definition across the whole analysis period.",
+        "Comparing values computed under different definitions is not a comparison.",
+        False,
+        "recompute every period under one current definition, or split the analysis at the change",
+    ),
+    "informative_missingness": (
+        "Outcome missingness that does not depend on the treatment assignment.",
+        "When missingness itself differs by treatment, the observed difference is confounded "
+        "with who got measured, not just who got treated.",
+        True,
+        "follow up on missing outcomes so measurement no longer depends on treatment",
     ),
 }
 _CHECKS = (
@@ -281,12 +314,25 @@ def _load(path: Path, mapping: DataMapping) -> tuple[dict[str, object], ...]:
         # read as text and parse in Python: duckdb's TIMESTAMPTZ conversion needs pytz
         f"cast({_identifier(mapping.event_time_column)} AS VARCHAR) AS event_time",
         f"cast({_identifier(mapping.treatment_column)} AS VARCHAR) AS treatment",
-        f"cast({_identifier(mapping.outcome_column)} AS DOUBLE) AS outcome",
+        # try_cast, not cast: a blank or non-numeric outcome is a missing value to
+        # report, not a reason to abort the whole run.
+        f"try_cast({_identifier(mapping.outcome_column)} AS DOUBLE) AS outcome",
     ]
     columns += [
         f"cast({_identifier(name)} AS VARCHAR) AS {_identifier(name)}"
         for name in mapping.covariate_columns
     ]
+    optional_time_columns = {
+        "prediction_time": mapping.prediction_time_column,
+        "feature_available_time": mapping.feature_available_time_column,
+    }
+    for alias, source in optional_time_columns.items():
+        if source:
+            columns.append(f"cast({_identifier(source)} AS VARCHAR) AS {alias}")
+    if mapping.metric_definition_column:
+        columns.append(
+            f"cast({_identifier(mapping.metric_definition_column)} AS VARCHAR) AS metric_definition"
+        )
     with duckdb.connect() as connection:
         cursor = connection.execute(
             f"SELECT {', '.join(columns)} FROM {_relation(path)} ORDER BY 1"
@@ -295,6 +341,9 @@ def _load(path: Path, mapping: DataMapping) -> tuple[dict[str, object], ...]:
         records = [dict(zip(names, row, strict=True)) for row in cursor.fetchall()]
     for record in records:
         record["event_time"] = _parse_time(record["event_time"])
+        for alias in optional_time_columns:
+            if alias in record:
+                record[alias] = _parse_time(record[alias])
     return tuple(records)
 
 
@@ -311,7 +360,7 @@ def _describe(path: Path, mapping: DataMapping) -> _Descriptive:
     outcome = _identifier(mapping.outcome_column)
     with duckdb.connect() as connection:
         rows = connection.execute(
-            f"SELECT cast({treatment} AS VARCHAR), count(*), avg(cast({outcome} AS DOUBLE)) "
+            f"SELECT cast({treatment} AS VARCHAR), count(*), avg(try_cast({outcome} AS DOUBLE)) "
             f"FROM {_relation(path)} GROUP BY 1 ORDER BY 1"
         ).fetchall()
     by_group = tuple((str(row[0]), int(row[1]), float(row[2])) for row in rows)
@@ -363,11 +412,25 @@ def _run_checks(
             rows,
             context=TemporalContext(
                 event_time="event_time",
+                prediction_time=(
+                    "prediction_time" if spec.mapping.prediction_time_column else None
+                ),
+                feature_available_time=(
+                    "feature_available_time" if spec.mapping.feature_available_time_column else None
+                ),
                 observation_window=timedelta(days=spec.mapping.observation_window_days),
                 analysis_end=spec.mapping.analysis_end,
             ),
         )
     )
+    if spec.mapping.metric_definition_column:
+        versions = tuple(
+            (row["event_time"], str(row["metric_definition"]))
+            for row in rows
+            if isinstance(row["event_time"], datetime)
+        )
+        findings.extend(TemporalAssessor.definition_changes(versions))
+    findings.extend(_missingness_findings(rows, spec.mapping))
 
     overlap = _overlap(rows, spec.mapping)
     if not overlap:
@@ -389,7 +452,54 @@ def _run_checks(
         )
         .findings
     )
+    findings.extend(_power_findings(rows))
     return tuple(findings)
+
+
+def _power_findings(rows: tuple[dict[str, object], ...]) -> tuple[Finding, ...]:
+    """Is this comparison's sample large enough to trust a null result?
+
+    A moderate observed effect from a handful of observations per group can
+    be statistical noise; StatisticalAssessor reports insufficient_power
+    when the achieved power falls short of the 80% target.
+    """
+    by_treatment: dict[object, list[float]] = {}
+    for row in rows:
+        outcome = row.get("outcome")
+        if isinstance(outcome, (int, float)):
+            by_treatment.setdefault(row["treatment"], []).append(float(outcome))
+    groups = sorted(by_treatment.items(), key=lambda item: str(item[0]))
+    if len(groups) != 2 or any(len(values) < 2 for _, values in groups):
+        return ()
+    (_, control), (_, treatment) = groups
+    return StatisticalAssessor().assess_mean_difference(tuple(treatment), tuple(control)).findings
+
+
+def _missingness_findings(
+    rows: tuple[dict[str, object], ...], mapping: DataMapping
+) -> tuple[Finding, ...]:
+    """Does outcome missingness itself depend on treatment assignment?
+
+    Equal missingness across arms just shrinks the sample (see
+    _power_findings). Missingness that differs by arm confounds the
+    comparison with who got measured, not just who got treated -- that is
+    a validity failure a bigger sample does not fix.
+    """
+    rates = DataQualityAssessor.missingness_by_group(rows, field="outcome", group="treatment")
+    if len(rates) != 2:
+        return ()
+    spread = max(rates.values()) - min(rates.values())
+    if spread <= _INFORMATIVE_MISSINGNESS_THRESHOLD:
+        return ()
+    return (
+        Finding(
+            "informative_missingness",
+            Severity.BLOCKER,
+            "Outcome missingness rate differs by treatment arm.",
+            (mapping.treatment_column, mapping.outcome_column),
+            spread,
+        ),
+    )
 
 
 def _to_finding_input(finding: Finding) -> FindingInput:

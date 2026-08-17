@@ -36,6 +36,10 @@ class FailureClass(StrEnum):
     CAUSAL = "causal"
     TEMPORAL = "temporal"
     DATA_MODEL = "data_model"
+    PREDICTIVE = "predictive"
+    STATISTICAL = "statistical"
+    METRIC_SEMANTICS = "metric_semantics"
+    MISSINGNESS = "missingness"
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,13 +136,74 @@ _VARIANTS: dict[FailureClass, tuple[str, ...]] = {
         "entity_alias_collision",
         "repeated_orders",
     ),
+    FailureClass.PREDICTIVE: (
+        "post_prediction_feature",
+        "delayed_feature_pipeline",
+        "backfilled_signal",
+        "leaked_aggregate",
+    ),
+    FailureClass.STATISTICAL: (
+        "pilot_sample_collapse",
+        "early_stopping",
+        "segment_split",
+        "holdout_shrink",
+    ),
+    FailureClass.METRIC_SEMANTICS: (
+        "definition_migration",
+        "gross_to_net",
+        "denominator_change",
+        "unit_change",
+    ),
+    FailureClass.MISSINGNESS: (
+        "treatment_dependent_dropout",
+        "instrumentation_gap",
+        "opt_out_bias",
+        "survey_nonresponse",
+    ),
 }
 
 _BLOCKER_BY_CLASS = {
     FailureClass.CAUSAL: "positivity_violation",
     FailureClass.TEMPORAL: "immature_cohort",
     FailureClass.DATA_MODEL: "duplicate_entities",
+    FailureClass.PREDICTIVE: "prediction_leakage",
+    FailureClass.STATISTICAL: "insufficient_power",
+    FailureClass.METRIC_SEMANTICS: "definition_change",
+    FailureClass.MISSINGNESS: "informative_missingness",
 }
+
+# Shared binary-outcome shape. 100 per arm keeps the baseline comfortably
+# powered (StatisticalAssessor's default 80% target) and the attenuated
+# (~0.4x gap) and reversed (clear sign flip) mutations powered too, so the
+# blanket statistical-power check present on every question doesn't leak an
+# incidental insufficient_power blocker into a class it isn't testing --
+# only the statistical class's own evidence_invalidation mutation collapses
+# the sample small enough to trip it on purpose.
+_BASE_SIZE = 100
+_BASELINE_GAP = 50
+
+
+def _binary_counts(scenario: Scenario, family: MutationFamily | None) -> tuple[int, int, int]:
+    """(size, control_positive, treated_positive) for the shared outcome shape."""
+    offset = int(scenario.scenario_id.rsplit("-", 1)[1])
+    size = _BASE_SIZE
+    control_positive = 15 + (offset % 3) * 5  # 15, 20, 25
+    treated_positive = control_positive + _BASELINE_GAP
+    if family is MutationFamily.EFFECT_ATTENUATION:
+        treated_positive = control_positive + round(_BASELINE_GAP * 0.4)
+    elif family is MutationFamily.OUTCOME_REVERSAL:
+        treated_positive = max(0, control_positive - round(_BASELINE_GAP * 0.75))
+    if (
+        scenario.failure_class is FailureClass.STATISTICAL
+        and family is MutationFamily.EVIDENCE_INVALIDATION
+    ):
+        # This class's validity condition IS sample size: shrink to a pilot
+        # that cannot power the same comparison, proportionally preserving
+        # the baseline split so only n changes.
+        size = 4
+        control_positive = max(1, round(control_positive * size / _BASE_SIZE))
+        treated_positive = max(1, round(treated_positive * size / _BASE_SIZE))
+    return size, control_positive, treated_positive
 
 
 def benchmark_scenarios() -> tuple[Scenario, ...]:
@@ -188,11 +253,40 @@ _FRAMING: dict[FailureClass, tuple[str, str, str]] = {
         "survival_90d",
         "Share of accounts still billing 90 days after the change",
     ),
+    FailureClass.PREDICTIVE: (
+        "Did the new signal improve 90-day churn prediction?",
+        "churn_flagged_90d",
+        "Share of accounts flagged for churn within 90 days",
+    ),
+    FailureClass.STATISTICAL: (
+        "Did the checkout redesign increase 90-day conversion?",
+        "conversion_90d",
+        "Share of visitors converting within 90 days",
+    ),
+    FailureClass.METRIC_SEMANTICS: (
+        "Did the loyalty program increase 90-day repeat purchase?",
+        "repeat_purchase_90d",
+        "Share of customers purchasing again within 90 days",
+    ),
+    FailureClass.MISSINGNESS: (
+        "Did the support outreach improve 90-day satisfaction?",
+        "satisfied_90d",
+        "Share of customers reporting satisfaction within 90 days",
+    ),
 }
 
 
 def _question_yaml(scenario: Scenario) -> str:
     question, metric_id, definition = _FRAMING[scenario.failure_class]
+    failure_class = scenario.failure_class
+    extra_mapping = ""
+    if failure_class is FailureClass.PREDICTIVE:
+        extra_mapping = (
+            "  prediction_time_column: prediction_time\n"
+            "  feature_available_time_column: feature_available_time\n"
+        )
+    elif failure_class is FailureClass.METRIC_SEMANTICS:
+        extra_mapping = "  metric_definition_column: metric_definition\n"
     return f"""question_id: q_{scenario.scenario_id.replace("-", "_")}
 raw_question: "{question}"
 normalized_question: "{question}"
@@ -219,7 +313,7 @@ data:
   covariate_columns: ["channel"]
   observation_window_days: 90
   analysis_end: "2025-06-30T00:00:00+00:00"
-causal:
+{extra_mapping}causal:
   treatment: exposed
   outcome: retained_90d
   population: "Synthetic benchmark customers"
@@ -238,13 +332,15 @@ claims:
 """
 
 
-def _scenario_counts(scenario: Scenario) -> tuple[int, int, int]:
-    """Group size and positive counts, varied per scenario so cases are not clones."""
-    offset = int(scenario.scenario_id.rsplit("-", 1)[1])
-    size = 12
-    control_positive = 2 + (offset % 3)
-    treated_positive = 8 + (offset % 3)
-    return size, control_positive, treated_positive
+# Missingness scenarios drop the outcome for this fraction of exposed rows
+# under evidence_invalidation -- large enough to clear the engine's 0.15
+# spread threshold, small enough to leave a comparison to describe at all.
+_MISSING_STRIDE = 5
+_MISSING_PER_STRIDE = 2
+
+
+def _missing_outcome(index: int) -> bool:
+    return index % _MISSING_STRIDE < _MISSING_PER_STRIDE
 
 
 def _rows(scenario: Scenario, family: MutationFamily | None) -> str:
@@ -254,33 +350,62 @@ def _rows(scenario: Scenario, family: MutationFamily | None) -> str:
     invalidation is class-specific: it destroys the property that made the
     scenario's design valid in the first place.
     """
-    size, control_positive, treated_positive = _scenario_counts(scenario)
-    if family is MutationFamily.EFFECT_ATTENUATION:
-        treated_positive = control_positive + 2
-    elif family is MutationFamily.OUTCOME_REVERSAL:
-        treated_positive = max(0, control_positive - 1)
+    size, control_positive, treated_positive = _binary_counts(scenario, family)
     invalidated = family is MutationFamily.EVIDENCE_INVALIDATION
     failure_class = scenario.failure_class
 
-    records = ["customer_id,acquisition_date,exposed,retained_90d,channel,noise"]
+    header = ["customer_id", "acquisition_date", "exposed", "retained_90d", "channel", "noise"]
+    if failure_class is FailureClass.PREDICTIVE:
+        header += ["prediction_time", "feature_available_time"]
+    elif failure_class is FailureClass.METRIC_SEMANTICS:
+        header += ["metric_definition"]
+
+    records = [",".join(header)]
     for treatment in (0, 1):
         positives = control_positive if treatment == 0 else treated_positive
         for index in range(size):
-            customer_id = f"{scenario.scenario_id}-t{treatment}-{index:02d}"
+            customer_id = f"{scenario.scenario_id}-t{treatment}-{index:03d}"
             channel = "mixed"
-            acquired = f"2025-01-{1 + (index % 20):02d}T00:00:00+00:00"
+            day = 1 + (index % 20)
+            acquired = f"2025-01-{day:02d}T00:00:00+00:00"
+            outcome = "1" if index < positives else "0"
+
             if invalidated and failure_class is FailureClass.CAUSAL:
                 # Every stratum now holds a single treatment level.
                 channel = "organic" if treatment == 0 else "paid"
             elif invalidated and failure_class is FailureClass.TEMPORAL:
                 # Acquired too late to have completed the 90-day window.
-                acquired = f"2025-06-{1 + (index % 20):02d}T00:00:00+00:00"
+                acquired = f"2025-06-{day:02d}T00:00:00+00:00"
             elif invalidated and failure_class is FailureClass.DATA_MODEL:
                 # A join fan-out collapses two entities onto one identifier.
-                customer_id = f"{scenario.scenario_id}-t{treatment}-{index // 2:02d}"
+                customer_id = f"{scenario.scenario_id}-t{treatment}-{index // 2:03d}"
+            elif (
+                invalidated
+                and failure_class is FailureClass.MISSINGNESS
+                and treatment == 1
+                and _missing_outcome(index)
+            ):
+                # Outcome goes missing for exposed customers specifically:
+                # the comparison is confounded by who got measured.
+                outcome = ""
+
             noise = "mutated" if family is MutationFamily.IRRELEVANT_NOISE else "baseline"
-            outcome = 1 if index < positives else 0
-            records.append(f"{customer_id},{acquired},{treatment},{outcome},{channel},{noise}")
+            row = [customer_id, acquired, str(treatment), outcome, channel, noise]
+
+            if failure_class is FailureClass.PREDICTIVE:
+                prediction_time = f"2025-01-{day:02d}T00:10:00+00:00"
+                leak = invalidated
+                feature_available_time = (
+                    f"2025-01-{day:02d}T00:15:00+00:00"
+                    if leak
+                    else f"2025-01-{day:02d}T00:05:00+00:00"
+                )
+                row += [prediction_time, feature_available_time]
+            elif failure_class is FailureClass.METRIC_SEMANTICS:
+                definition = "net_v2" if invalidated and index % 2 == 0 else "gross_v1"
+                row.append(definition)
+
+            records.append(",".join(row))
     return "\n".join(records) + "\n"
 
 
@@ -289,14 +414,12 @@ def blind_evidence(scenario: Scenario, family: MutationFamily | None) -> dict[st
 
     Mirrors `_rows` at the level of detail an external agent needs to decide:
     group sizes, the outcome split, whether covariate strata overlap, whether
-    observation windows completed, and whether rows still map one-to-one onto
-    entities. This is what ships in a frozen release's cases.jsonl.
+    observation windows completed, whether rows still map one-to-one onto
+    entities, and the class-specific signal (feature timing, missingness by
+    arm, metric definitions in use). This is what ships in a frozen
+    release's cases.jsonl.
     """
-    size, control_positive, treated_positive = _scenario_counts(scenario)
-    if family is MutationFamily.EFFECT_ATTENUATION:
-        treated_positive = control_positive + 2
-    elif family is MutationFamily.OUTCOME_REVERSAL:
-        treated_positive = max(0, control_positive - 1)
+    size, control_positive, treated_positive = _binary_counts(scenario, family)
     invalidated = family is MutationFamily.EVIDENCE_INVALIDATION
     failure_class = scenario.failure_class
 
@@ -306,14 +429,31 @@ def blind_evidence(scenario: Scenario, family: MutationFamily | None) -> dict[st
     }
     windows_complete = True
     distinct_entities = size * 2
+    outcome_missing = {
+        "unexposed": {"missing": 0, "total": size},
+        "exposed": {"missing": 0, "total": size},
+    }
+    feature_available_before_prediction = True
+    metric_definitions_used = ["gross_v1"]
+
     if invalidated and failure_class is FailureClass.CAUSAL:
         channels = {"unexposed": {"organic": size}, "exposed": {"paid": size}}
     elif invalidated and failure_class is FailureClass.TEMPORAL:
         windows_complete = False
     elif invalidated and failure_class is FailureClass.DATA_MODEL:
         distinct_entities = size
+    elif invalidated and failure_class is FailureClass.MISSINGNESS:
+        missing_exposed = sum(1 for index in range(size) if _missing_outcome(index))
+        outcome_missing = {
+            "unexposed": {"missing": 0, "total": size},
+            "exposed": {"missing": missing_exposed, "total": size},
+        }
+    elif invalidated and failure_class is FailureClass.PREDICTIVE:
+        feature_available_before_prediction = False
+    elif invalidated and failure_class is FailureClass.METRIC_SEMANTICS:
+        metric_definitions_used = ["gross_v1", "net_v2"]
 
-    return {
+    evidence: dict[str, object] = {
         "rows": size * 2,
         "distinct_entities": distinct_entities,
         "outcome_by_exposure": {
@@ -327,6 +467,13 @@ def blind_evidence(scenario: Scenario, family: MutationFamily | None) -> dict[st
         "observation_window_days": 90,
         "all_observation_windows_complete": windows_complete,
     }
+    if failure_class is FailureClass.PREDICTIVE:
+        evidence["feature_available_before_prediction"] = feature_available_before_prediction
+    elif failure_class is FailureClass.METRIC_SEMANTICS:
+        evidence["metric_definitions_used"] = metric_definitions_used
+    elif failure_class is FailureClass.MISSINGNESS:
+        evidence["outcome_missing_by_exposure"] = outcome_missing
+    return evidence
 
 
 def blind_question(failure_class: FailureClass) -> tuple[str, str]:
@@ -358,10 +505,23 @@ def _effect(run: AssessmentRun) -> float:
     return float(value)
 
 
-def _derive_action(baseline: AssessmentRun, mutated: AssessmentRun) -> MutationAction:
+def _derive_action(
+    baseline: AssessmentRun, mutated: AssessmentRun, blocker_code: str
+) -> MutationAction:
+    """Classify the transition from what the engine actually reported.
+
+    RETRACT is keyed on the *specific* blocker this scenario is built to
+    exercise, not "any blocker at all": every question now also runs a
+    blanket statistical-power check, and a materially attenuated or
+    reversed effect can legitimately be underpowered on its own without
+    that being the validity failure under test. Scoring against the wrong
+    blocker would credit or blame the engine for a mechanism the scenario
+    never touched.
+    """
     baseline_effect = _effect(baseline)
     mutated_effect = _effect(mutated)
-    if mutated.blockers:
+    mutated_codes = {item.finding_id for item in mutated.blockers}
+    if blocker_code in mutated_codes:
         return MutationAction.RETRACT
     if baseline_effect * mutated_effect < 0:
         return MutationAction.REVERSE
@@ -411,7 +571,9 @@ def run_mutation_benchmark(output_directory: Path) -> MutationBenchmarkReport:
         observations.append(
             MutationObservation(
                 pair=pair,
-                observed_action=_derive_action(baseline, mutated),
+                observed_action=_derive_action(
+                    baseline, mutated, expected_blocker(pair.failure_class)
+                ),
                 baseline_verdict=baseline.verdict.value,
                 mutated_verdict=mutated.verdict.value,
                 baseline_effect=_effect(baseline),
@@ -463,6 +625,7 @@ def run_mutation_benchmark(output_directory: Path) -> MutationBenchmarkReport:
     digest = hashlib.sha256(
         json.dumps(stable, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
+    expected_total = len(_VARIANTS) * 4 * len(MutationFamily)
     report = MutationBenchmarkReport(
         total_pairs=len(frozen),
         action_accuracy=_ratio(correct, len(frozen)),
@@ -475,7 +638,7 @@ def run_mutation_benchmark(output_directory: Path) -> MutationBenchmarkReport:
         class_accuracy=class_accuracy,
         reproducibility_hash=digest,
         release_pass=(
-            len(frozen) == 48
+            len(frozen) == expected_total
             and correct == len(frozen)
             and unsafe_keep == 0
             and overreaction == 0

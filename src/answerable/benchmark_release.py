@@ -23,7 +23,7 @@ from answerable.mutation_benchmark import (
     expected_blocker,
 )
 
-RELEASE_ID = "emt-v1"
+RELEASE_ID = "emt-v2"
 _ARTIFACTS = ("manifest.json", "cases.jsonl", "oracle.json", "protocol.md")
 
 
@@ -94,7 +94,7 @@ def _manifest() -> dict[str, object]:
     }
 
 
-_PROTOCOL = """# AnswerableBench EMT v1 — protocol
+_PROTOCOL = """# AnswerableBench EMT v2 — protocol
 
 ## What is measured
 
@@ -120,14 +120,20 @@ action.
 
 ## Failure classes
 
-Scenarios are spread across classes so `evidence_invalidation` breaks a
-different property in each, rather than repeating one causal pattern:
+Scenarios are spread evenly across seven classes so `evidence_invalidation`
+breaks a different property in each, rather than repeating one causal
+pattern. Four scenarios per class, four mutations per scenario: 28 scenarios,
+112 paired tests.
 
 | Class | Property destroyed | Blocker the system must raise |
 | --- | --- | --- |
 | `causal` | Covariate overlap between treatment arms | `positivity_violation` |
 | `temporal` | Completed observation window | `immature_cohort` |
 | `data_model` | One row per unit of analysis | `duplicate_entities` |
+| `predictive` | Features available only before prediction time | `prediction_leakage` |
+| `statistical` | A sample large enough to power the comparison | `insufficient_power` |
+| `metric_semantics` | One stable metric definition across the period | `definition_change` |
+| `missingness` | Outcome missingness independent of treatment | `informative_missingness` |
 
 ## Metrics
 
@@ -140,19 +146,22 @@ different property in each, rather than repeating one causal pattern:
 
 ## Agent comparison
 
-Three agents, two repetitions, every case: 288 decisions. A run is only
+Three agents, two repetitions, every case: 672 decisions. A run is only
 reportable when the matrix is complete.
 
 ## Freeze rule
 
 This release is frozen. Results are published against `release_hash`; the
 cases are not revised after seeing any system's score. A change to the cases
-is a new release id, not an edit to this one.
+is a new release id, not an edit to this one. `emt-v1` (48 pairs, 3 classes)
+stays published as an archived, immutable prior release — `emt-v2` supersedes
+it for new comparisons, it does not retroactively invalidate results already
+published against `emt-v1`.
 
 ## Reproducing
 
 ```bash
-answerable benchmark --freeze --output benchmarks/releases/emt-v1
+answerable benchmark --freeze --output benchmarks/releases/emt-v2
 ```
 
 Recompute `release_hash` from `SHA256SUMS` to confirm the cases are unchanged.

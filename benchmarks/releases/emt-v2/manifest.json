@@ -1,0 +1,26 @@
+{
+  "agent_protocol": {
+    "agents": 3,
+    "decisions": 672,
+    "repetitions": 2
+  },
+  "case_count": 112,
+  "failure_classes": [
+    "causal",
+    "data_model",
+    "metric_semantics",
+    "missingness",
+    "predictive",
+    "statistical",
+    "temporal"
+  ],
+  "mutation_families": [
+    "effect_attenuation",
+    "evidence_invalidation",
+    "irrelevant_noise",
+    "outcome_reversal"
+  ],
+  "release_id": "emt-v2",
+  "scenario_count": 28,
+  "scenarios_per_class": 4
+}

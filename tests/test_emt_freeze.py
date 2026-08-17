@@ -10,8 +10,8 @@ def test_freeze_writes_every_artifact_and_verifies(tmp_path: Path) -> None:
     release = freeze_benchmark(tmp_path)
 
     assert release.release_id == RELEASE_ID
-    assert release.case_count == 48
-    assert release.scenario_count == 12
+    assert release.case_count == 112
+    assert release.scenario_count == 28
     assert len(release.release_hash) == 64
     for name in ("manifest.json", "cases.jsonl", "oracle.json", "protocol.md", "SHA256SUMS"):
         assert (tmp_path / name).is_file()

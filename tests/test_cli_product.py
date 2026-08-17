@@ -8,6 +8,30 @@ import pytest
 from answerable.cli import main
 
 
+def test_init_scaffolds_question_yaml_from_a_real_example(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    output = tmp_path / "question.yaml"
+    code = main(
+        (
+            "init",
+            "--data",
+            "examples/campaign_retention/customers.csv",
+            "--output",
+            str(output),
+        )
+    )
+    printed = capsys.readouterr().out
+
+    assert code == 0
+    assert output.is_file()
+    text = output.read_text(encoding="utf-8")
+    assert "entity_column: customer_id" in text
+    assert "treatment_column: campaign_exposed" in text
+    assert "outcome_column: retained_90d" in text
+    assert "entity_column: customer_id" in printed
+
+
 def test_doctor_human_output_reports_ready(capsys: pytest.CaptureFixture[str]) -> None:
     code = main(("doctor",))
     output = capsys.readouterr().out
@@ -64,7 +88,7 @@ def test_mutation_benchmark_human_output_is_release_gating(
 
     assert code == 0
     assert "Epistemic Mutation Testing" in output
-    assert "Pairs: 48" in output
+    assert "Pairs: 112" in output
     assert "Action accuracy: 100.0%" in output
     assert "Unsafe KEEP rate: 0.0%" in output
     assert "Overreaction rate: 0.0%" in output
@@ -81,7 +105,7 @@ def test_mutation_benchmark_json_exposes_reproducibility_hash(
     assert code == 0
     assert payload["command"] == "benchmark"
     assert payload["suite"] == "mutations"
-    assert payload["total_pairs"] == 48
+    assert payload["total_pairs"] == 112
     assert payload["unsafe_keep_rate"] == 0.0
     assert payload["overreaction_rate"] == 0.0
     assert payload["release_pass"] is True
@@ -92,13 +116,13 @@ def test_mutation_benchmark_json_exposes_reproducibility_hash(
 def test_benchmark_freeze_writes_hash_addressed_release(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    release = tmp_path / "emt-v1"
+    release = tmp_path / "emt-v2"
     code = main(("--json", "benchmark", "--freeze", "--output", str(release)))
     payload = json.loads(capsys.readouterr().out)
 
     assert code == 0
-    assert payload["release_id"] == "emt-v1"
-    assert payload["case_count"] == 48
+    assert payload["release_id"] == "emt-v2"
+    assert payload["case_count"] == 112
     assert len(payload["release_hash"]) == 64
     assert (release / "SHA256SUMS").is_file()
     assert (release / "protocol.md").is_file()

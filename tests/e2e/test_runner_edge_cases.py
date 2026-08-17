@@ -55,18 +55,25 @@ QUESTION = {
 HEADER = "customer_id,acquisition_date,acquisition_channel,campaign_exposed,retained_90d"
 
 
-def _rows(timestamp: str) -> str:
+def _rows(timestamp: str, *, size: int = 8) -> str:
+    # Tile the 8-row base pattern rather than extend it with more index
+    # arithmetic: the exposed/retained cycle lengths (4 and 3) share a
+    # period of 12, so a naively larger range washes the effect back
+    # towards zero instead of just adding a bigger, equally powered sample.
     lines = [HEADER]
-    for index in range(8):
-        channel = "paid" if index % 2 else "organic"
-        exposed = "true" if index % 4 < 2 else "false"
-        retained = "true" if index % 3 else "false"
+    for index in range(size):
+        base = index % 8
+        channel = "paid" if base % 2 else "organic"
+        exposed = "true" if base % 4 < 2 else "false"
+        retained = "true" if base % 3 else "false"
         lines.append(f"c{index},{timestamp},{channel},{exposed},{retained}")
     return "\n".join(lines) + "\n"
 
 
-def _case(root: Path, timestamp: str, question: dict[str, object] | None = None) -> Path:
-    (root / "customers.csv").write_text(_rows(timestamp), encoding="utf-8")
+def _case(
+    root: Path, timestamp: str, question: dict[str, object] | None = None, *, size: int = 8
+) -> Path:
+    (root / "customers.csv").write_text(_rows(timestamp, size=size), encoding="utf-8")
     (root / "question.json").write_text(json.dumps(question or QUESTION), encoding="utf-8")
     return root
 
@@ -74,7 +81,10 @@ def _case(root: Path, timestamp: str, question: dict[str, object] | None = None)
 class RunnerEdgeCaseTest(unittest.TestCase):
     def test_supported_design_opens_the_causal_gate(self) -> None:
         with TemporaryDirectory() as directory:
-            root = _case(Path(directory), "2025-01-10T00:00:00+00:00")
+            # Every assessment now also runs a statistical-power check; a
+            # "cleanly answerable" case has to actually be powered, not
+            # just directionally correct on a handful of rows.
+            root = _case(Path(directory), "2025-01-10T00:00:00+00:00", size=160)
             run = AssessmentRunner(signer="ci", secret=b"secret").run(
                 data_sources=(root / "customers.csv",),
                 spec=load_spec(root / "question.json"),

@@ -6,17 +6,24 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ### Added
 - Epistemic Mutation Testing (EMT) executed through the real `AssessmentRunner`.
-- 12 deterministic scenarios crossed with four mutation families for 48 paired tests.
+- 28 deterministic scenarios across 7 failure classes crossed with four mutation families for 112 paired tests.
 - `KEEP`, `QUALIFY`, `RETRACT` and `REVERSE` transition oracles.
 - `answerable benchmark mutations` with a machine-readable `mutation_report.json`.
-- Release gates for transition accuracy, unsafe-KEEP rate and per-family accuracy.
+- Release gates for transition accuracy, unsafe-KEEP rate, per-family and per-failure-class accuracy.
 - Output-path-independent semantic reproducibility hashes.
-- External-agent evaluator enforcing 3 agents × 2 repetitions × 48 pairs (288 decisions).
+- External-agent evaluator enforcing 3 agents × 2 repetitions × 112 pairs (672 decisions).
 - Paired external-agent metrics for oracle accuracy, unsafe-KEEP rate and repeat consistency.
 - Clean-wheel CI execution of the mutation benchmark.
+- Real engine detectors for the four new failure classes: `prediction_leakage` (feature/prediction timing), `insufficient_power` (statistical power on every assessment), `definition_change` (metric definition stability), `informative_missingness` (treatment-dependent outcome missingness).
+- `answerable init --data <file> --output <question.yaml>` scaffolds a question file from a data file's own columns, to cut onboarding friction.
+- `benchmarks/releases/emt-v2/` (7-class, 112-pair) frozen alongside the immutable `emt-v1` (3-class, 48-pair) archive.
+- Real Claude/Codex EMT results published with a one-sided exact binomial significance test, and `docs/paper/paper.md` write-up.
+- README sections on using Answerable as a tool call from Claude Code / Codex, and a full CLI command reference.
 
 ### Changed
 - AnswerableBench now executes evidence-changing benchmark cases through the runner instead of only scoring supplied observations.
+- EMT oracle classification (`_derive_action`) now keys RETRACT on the specific blocker each scenario's failure class is designed to test, not "any blocker present" — needed once every assessment also runs the blanket statistical-power check.
+- `_load()`'s outcome column uses `try_cast` instead of `cast`, so a missing/non-numeric outcome value is reported as a data-quality finding instead of crashing the run.
 
 ### Planned
 - Publish locked external LLM comparison runs against the EMT protocol.
