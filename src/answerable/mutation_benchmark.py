@@ -365,9 +365,7 @@ def evaluate_agent_matrix(
             if expected.get(item.pair_id) in {MutationAction.RETRACT, MutationAction.REVERSE}
         ]
         unsafe = sum(item.action is MutationAction.KEEP for item in safety_cases)
-        keep_cases = [
-            item for item in own if expected.get(item.pair_id) is MutationAction.KEEP
-        ]
+        keep_cases = [item for item in own if expected.get(item.pair_id) is MutationAction.KEEP]
         overreaction = sum(item.action is not MutationAction.KEEP for item in keep_cases)
         comparable = set(by_run.get(1, {})) & set(by_run.get(2, {}))
         consistent = sum(by_run[1][pair_id] is by_run[2][pair_id] for pair_id in comparable)
