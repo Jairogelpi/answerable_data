@@ -11,10 +11,11 @@ from typing import cast
 from answerable.application.models import AssessmentRun
 from answerable.domain.models import Verdict
 
-COMMANDS = ("init", "frame", "plan", "execute", "inspect", "benchmark")
+COMMANDS = ("init", "frame", "plan", "execute", "inspect")
 _CLEAN_VERDICTS = frozenset({Verdict.ANSWERABLE, Verdict.ANSWERABLE_WITH_ASSUMPTIONS})
 EXIT_BLOCKED = 2
 EXIT_INVALID_WARRANT = 3
+EXIT_BENCHMARK_FAILED = 4
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -32,6 +33,12 @@ def build_parser() -> argparse.ArgumentParser:
     demo = subparsers.add_parser("demo", help="Run a built-in adversarial analytical case.")
     demo.add_argument("case", nargs="?", choices=("causal", "grain", "maturity"), default="causal")
     demo.add_argument("--output", type=Path, default=None)
+
+    benchmark = subparsers.add_parser(
+        "benchmark", help="Execute release-gating analytical validity benchmarks."
+    )
+    benchmark.add_argument("suite", nargs="?", choices=("mutations",), default="mutations")
+    benchmark.add_argument("--output", type=Path, default=Path("answerable-benchmark/mutations"))
 
     assess = subparsers.add_parser("assess", help="Run data and a question to an Evidence Warrant.")
     assess.add_argument("--data", action="append", type=Path, default=None, required=True)
@@ -132,6 +139,29 @@ def _demo(args: argparse.Namespace, *, json_output: bool) -> tuple[int, dict[str
     return 0, payload
 
 
+def _benchmark(args: argparse.Namespace, *, json_output: bool) -> tuple[int, dict[str, object]]:
+    from answerable.mutation_benchmark import report_to_dict, run_mutation_benchmark
+
+    report = run_mutation_benchmark(args.output)
+    payload = report_to_dict(report)
+    payload["suite"] = args.suite
+    payload["report"] = str(args.output / "mutation_report.json")
+    if not json_output:
+        print("AnswerableBench — Epistemic Mutation Testing")
+        print(f"Pairs: {report.total_pairs}")
+        print(f"Action accuracy: {report.action_accuracy:.1%}")
+        print(f"Unsafe KEEP rate: {report.unsafe_keep_rate:.1%}")
+        print(f"QUALIFY recall: {report.qualify_recall:.1%}")
+        print(f"RETRACT recall: {report.retract_recall:.1%}")
+        print(f"REVERSE recall: {report.reverse_recall:.1%}")
+        for family, accuracy in sorted(report.family_accuracy.items()):
+            print(f"  {family}: {accuracy:.1%}")
+        print(f"Reproducibility: {report.reproducibility_hash}")
+        print(f"Release gate: {'PASS' if report.release_pass else 'FAIL'}")
+        print(f"Report: {args.output / 'mutation_report.json'}")
+    return (0 if report.release_pass else EXIT_BENCHMARK_FAILED), payload
+
+
 def _doctor() -> tuple[int, dict[str, object]]:
     checks: dict[str, str] = {}
     for module in ("duckdb", "sqlglot", "yaml"):
@@ -166,6 +196,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         code, payload = _assess(args, json_output=args.json_output)
     elif args.command == "demo":
         code, payload = _demo(args, json_output=args.json_output)
+    elif args.command == "benchmark":
+        code, payload = _benchmark(args, json_output=args.json_output)
     elif args.command == "doctor":
         code, payload = _doctor()
     elif args.command == "warrant" and args.action == "verify" and args.warrant is not None:
@@ -185,6 +217,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             marker = "+" if status == "ok" else "x"
             print(f"{marker} {dependency}: {status}")
         print(f"Status: {payload['status']}")
-    elif args.command not in {"assess", "demo"}:
+    elif args.command not in {"assess", "demo", "benchmark"}:
         print(f"answerable {args.command}: ok")
     return code
