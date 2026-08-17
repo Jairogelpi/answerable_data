@@ -208,12 +208,23 @@ def _run_codex(prompt: str, *, model: str | None, scratch_dir: Path) -> AgentCal
 
 _GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 _GEMINI_RETRY_STATUSES = {429, 500, 503}
+_GEMINI_RETRY_DELAY_PATTERN = re.compile(r"retry in ([\d.]+)s", re.IGNORECASE)
+# Free-tier gemini-2.5-flash is capped at 5 requests/minute (confirmed from a
+# live 429 body: "limit: 5, model: gemini-2.5-flash"). A burst of calls at
+# the ~3-4s latency this API otherwise allows blows through that in under a
+# minute and then the quota never recovers within a couple of short retries
+# -- 76/96 calls failed that way on the first full run. Pacing calls to stay
+# under the limit, plus honoring the server's own "retry in Xs" on the 429s
+# that still happen, is what makes a full run reliable instead of lucky.
+_GEMINI_MIN_INTERVAL_SECONDS = 13.0
+_gemini_last_call_at = 0.0
 
 
 def _run_gemini(prompt: str, *, model: str, scratch_dir: Path) -> AgentCallResult:
     # No official Gemini CLI to shell out to, so this calls the API directly.
     # scratch_dir is unused (there's no cwd/persona to escape from), kept
     # only so this runner has the same signature as the CLI-backed ones.
+    global _gemini_last_call_at
     del scratch_dir
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -231,9 +242,11 @@ def _run_gemini(prompt: str, *, model: str, scratch_dir: Path) -> AgentCallResul
     start = time.perf_counter()
     body = b""
     status = 0
-    # The free tier returns transient 503/429 under load; two retries with a
-    # short backoff keeps a long batch run from losing calls to that alone.
-    for attempt in range(3):
+    for attempt in range(5):
+        since_last = time.perf_counter() - _gemini_last_call_at
+        if since_last < _GEMINI_MIN_INTERVAL_SECONDS:
+            time.sleep(_GEMINI_MIN_INTERVAL_SECONDS - since_last)
+        _gemini_last_call_at = time.perf_counter()
         try:
             with urllib.request.urlopen(request, timeout=_CALL_TIMEOUT_SECONDS) as response:
                 body = response.read()
@@ -242,9 +255,10 @@ def _run_gemini(prompt: str, *, model: str, scratch_dir: Path) -> AgentCallResul
         except urllib.error.HTTPError as exc:
             body = exc.read()
             status = exc.code
-            if status not in _GEMINI_RETRY_STATUSES or attempt == 2:
+            if status not in _GEMINI_RETRY_STATUSES or attempt == 4:
                 break
-            time.sleep(2**attempt)
+            match = _GEMINI_RETRY_DELAY_PATTERN.search(body.decode("utf-8", "replace"))
+            time.sleep(float(match.group(1)) + 1.0 if match else 2**attempt)
         except urllib.error.URLError as exc:
             body = str(exc).encode("utf-8")
             status = 0
@@ -285,7 +299,12 @@ AGENT_RUNNERS: dict[str, Callable[[str, str, Path], AgentCallResult]] = {
 _DEFAULT_MODEL: dict[str, str | None] = {
     "claude": "sonnet",
     "codex": None,
-    "gemini": "gemini-2.5-flash",
+    # gemini-2.5-flash's free tier is capped at 20 requests/DAY (confirmed
+    # from a live 429 body: quotaId GenerateRequestsPerDayPerProjectPerModel-
+    # FreeTier, quotaValue 20) -- one 48-case run alone exhausts it for the
+    # rest of the day, and no retry/backoff fixes a daily cap. flash-lite is
+    # a separate quota bucket with a workable free-tier daily limit.
+    "gemini": "gemini-2.5-flash-lite",
 }
 
 
