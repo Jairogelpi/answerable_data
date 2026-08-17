@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from answerable.cli import main
 
 
-def test_doctor_human_output_reports_ready(capsys: object) -> None:
+def test_doctor_human_output_reports_ready(capsys: pytest.CaptureFixture[str]) -> None:
     code = main(("doctor",))
     output = capsys.readouterr().out
 
@@ -17,7 +19,7 @@ def test_doctor_human_output_reports_ready(capsys: object) -> None:
     assert "yaml: ok" in output
 
 
-def test_doctor_json_is_machine_readable(capsys: object) -> None:
+def test_doctor_json_is_machine_readable(capsys: pytest.CaptureFixture[str]) -> None:
     code = main(("--json", "doctor"))
     payload = json.loads(capsys.readouterr().out)
 
@@ -27,7 +29,9 @@ def test_doctor_json_is_machine_readable(capsys: object) -> None:
     assert payload["demos"] == ["causal", "grain", "maturity"]
 
 
-def test_demo_human_output_surfaces_claim_boundaries(tmp_path: Path, capsys: object) -> None:
+def test_demo_human_output_surfaces_claim_boundaries(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     code = main(("demo", "causal", "--output", str(tmp_path / "demo")))
     output = capsys.readouterr().out
 
@@ -39,7 +43,9 @@ def test_demo_human_output_surfaces_claim_boundaries(tmp_path: Path, capsys: obj
     assert "warrant.md" in output
 
 
-def test_demo_json_returns_expected_signal(tmp_path: Path, capsys: object) -> None:
+def test_demo_json_returns_expected_signal(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     code = main(
         ("--json", "demo", "maturity", "--output", str(tmp_path / "demo-maturity"))
     )
