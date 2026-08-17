@@ -47,6 +47,9 @@ jobs:
       - name: Test with branch coverage
         run: python -m pytest
 
+      - name: Smoke-test real MCP server
+        run: python -c "from answerable.interfaces.mcp_stdio import build_server; build_server(); print('MCP OK')"
+
       - name: Run the documented example exactly as the README shows it
         run: |
           answerable assess \
@@ -80,9 +83,11 @@ jobs:
           cache: pip
       - run: python -m pip install --disable-pip-version-check build
       - run: python -m build
-      - name: Clean wheel install
+      - name: Clean wheel install with MCP extra
         run: |
           python -m venv /tmp/answerable-wheel
-          /tmp/answerable-wheel/bin/python -m pip install dist/*.whl
+          WHEEL="$(ls dist/*.whl)"
+          /tmp/answerable-wheel/bin/python -m pip install "${WHEEL}[mcp]"
           /tmp/answerable-wheel/bin/python -c "import answerable; print(answerable.__version__)"
+          /tmp/answerable-wheel/bin/python -c "from answerable.interfaces.mcp_stdio import build_server; build_server(); print('wheel MCP OK')"
           /tmp/answerable-wheel/bin/answerable benchmark mutations --output /tmp/answerable-wheel-benchmark
