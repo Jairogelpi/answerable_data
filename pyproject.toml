@@ -37,8 +37,12 @@ Changelog = "https://github.com/Jairogelpi/answerable_data/blob/main/CHANGELOG.m
 answerable = "answerable.cli:main"
 
 [project.optional-dependencies]
+mcp = [
+  "mcp>=1.0,<2",
+]
 dev = [
   "build>=1.2.2",
+  "mcp>=1.0,<2",
   "mypy>=1.15",
   "pytest>=8.3",
   "pytest-cov>=6.0",

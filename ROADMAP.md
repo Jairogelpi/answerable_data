@@ -31,10 +31,11 @@ Answerable v0.1.0 is the validity-engine technical preview. The roadmap prioriti
 - Notebook export.
 - Gemini included in the external-agent comparison (blocked today on its free-tier request quota).
 - Re-run the external-agent comparison against `emt-v2`'s 7 failure classes.
+- [x] MCP server (`answerable mcp`) with all 8 tools from `docs/PRODUCT_SPEC.md` §18.3 running for real over stdio.
 
 ## Later
 
-- Stable REST and MCP transport implementations.
+- Stable REST transport implementation (MCP is done; HTTP/REST is not).
 - Additional warehouse adapters after connector-conformance proof.
 - Optional LLM framing limited to structured interpretation.
 - Hosted product only after the open-source workflow is reliable.

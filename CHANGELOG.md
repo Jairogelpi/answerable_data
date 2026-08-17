@@ -19,6 +19,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 - `benchmarks/releases/emt-v2/` (7-class, 112-pair) frozen alongside the immutable `emt-v1` (3-class, 48-pair) archive.
 - Real Claude/Codex EMT results published with a one-sided exact binomial significance test, and `docs/paper/paper.md` write-up.
 - README sections on using Answerable as a tool call from Claude Code / Codex, and a full CLI command reference.
+- Real MCP server (`answerable mcp`, `pip install 'answerable-data[mcp]'`): all 8 tools from `docs/PRODUCT_SPEC.md` §18.3 backed by real handlers (`AssessmentRunner`, `FileInspector`, `scaffold_question`, `verify_warrant`) via the existing disclosure-scoping `MCPServer`, connectable with `claude mcp add` / `codex mcp add`.
 
 ### Changed
 - AnswerableBench now executes evidence-changing benchmark cases through the runner instead of only scoring supplied observations.

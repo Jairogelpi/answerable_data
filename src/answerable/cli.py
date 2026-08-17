@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import platform
+import sys
 from collections.abc import Sequence
 from importlib.metadata import version
 from pathlib import Path
@@ -63,6 +64,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     source = subparsers.add_parser("source")
     source.add_argument("action", choices=("add", "test"))
+
+    subparsers.add_parser(
+        "mcp",
+        help="Run the MCP server over stdio (requires the 'mcp' extra: pip install "
+        "'answerable-data[mcp]'). Add it to Claude Code / Codex as a tool server.",
+    )
     return parser
 
 
@@ -257,6 +264,19 @@ def _doctor() -> tuple[int, dict[str, object]]:
     return (0 if ready else 1), payload
 
 
+def _mcp() -> int:
+    try:
+        from answerable.interfaces.mcp_stdio import run_stdio
+    except ImportError:
+        print(
+            "The MCP server needs the 'mcp' extra: pip install 'answerable-data[mcp]'",
+            file=sys.stderr,
+        )
+        return 1
+    run_stdio()
+    return 0
+
+
 def _verify(path: Path) -> tuple[int, dict[str, object]]:
     from answerable.application.assessment_runner import load_warrant
     from answerable.public import verify_warrant
@@ -267,6 +287,8 @@ def _verify(path: Path) -> tuple[int, dict[str, object]]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command == "mcp":
+        return _mcp()
     if args.command == "init":
         code, payload = _init(args, json_output=args.json_output)
     elif args.command == "assess":

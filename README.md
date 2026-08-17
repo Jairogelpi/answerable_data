@@ -189,7 +189,26 @@ no comparable covariates — I can't attribute this to
 the campaign."
 ```
 
-Neither agent needs a special connector: both are CLIs that already run shell commands, and `answerable` is a CLI. There is no MCP server shipped yet (`src/answerable/interfaces/mcp.py` is a typed contract for one, not a runnable server) — the tool-call integration below works today with zero extra code.
+There are two ways to connect this. Both call into the same real `AssessmentRunner` — neither is a mock.
+
+### Option A — MCP server (native tool calls)
+
+```bash
+python -m pip install 'answerable-data[mcp]'
+```
+
+Add it as a tool server:
+
+```bash
+claude mcp add answerable -- answerable mcp   # Claude Code
+codex mcp add answerable -- answerable mcp    # Codex
+```
+
+It exposes eight tools over stdio — `frame_question`, `inspect_data`, `assess_answerability`, `get_assessment`, `explain_finding`, `design_missing_evidence_plan`, `generate_analysis_plan`, `verify_warrant` — each backed by the same code path the CLI uses, never a fabricated result. `inspect_data` never returns row-level data, only column profiles.
+
+### Option B — shell command (zero extra install)
+
+Neither agent needs the MCP extra to do this today: both are CLIs that already run shell commands, and `answerable` is a CLI.
 
 **Claude Code** — add to the project's `CLAUDE.md`:
 
@@ -270,6 +289,7 @@ Every subcommand accepts a global `--json` flag before it for machine-readable o
 | `answerable benchmark mutations --output <dir>` | Runs the 112-pair Epistemic Mutation Testing release gate against the live engine. Exit `4` if it doesn't pass. |
 | `answerable benchmark --freeze --output <dir>` | Writes the frozen, hash-addressed benchmark release (`manifest.json`, `cases.jsonl`, `oracle.json`, `protocol.md`, `SHA256SUMS`). |
 | `answerable source add \| test` | Registers and health-checks a read-only data connector (SQLite/DuckDB/PostgreSQL-compatible). |
+| `answerable mcp` | Runs the MCP server over stdio (needs `pip install 'answerable-data[mcp]'`). See [Using Answerable with Claude Code and Codex](#using-answerable-with-claude-code-and-codex). |
 
 Scripts outside the `answerable` CLI, for the benchmark's external-agent protocol (see [Epistemic Mutation Testing](#epistemic-mutation-testing)):
 
@@ -329,7 +349,7 @@ The current engine includes:
 - paired epistemic mutation testing and external-agent scoring;
 - SQLite, DuckDB and PostgreSQL-compatible read-only connectors;
 - audit, retention and multi-tenant governance primitives;
-- API, MCP and HTML contract surfaces.
+- a real MCP server (`answerable mcp`, `pip install 'answerable-data[mcp]'`) alongside API and HTML contract surfaces.
 
 ## Architecture
 
