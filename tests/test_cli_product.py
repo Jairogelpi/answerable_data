@@ -46,9 +46,7 @@ def test_demo_human_output_surfaces_claim_boundaries(
 def test_demo_json_returns_expected_signal(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    code = main(
-        ("--json", "demo", "maturity", "--output", str(tmp_path / "demo-maturity"))
-    )
+    code = main(("--json", "demo", "maturity", "--output", str(tmp_path / "demo-maturity")))
     payload = json.loads(capsys.readouterr().out)
 
     assert code == 0
