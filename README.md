@@ -13,7 +13,7 @@ Your code has tests. Your data has tests. **Your conclusions should too.**
 ![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue)
 ![License](https://img.shields.io/badge/license-Apache--2.0-green)
 
-[60-second demo](#60-second-demo) · [Install](#install) · [Golden cases](#golden-cases) · [Evidence Warrants](#evidence-warrants) · [Architecture](#architecture)
+[60-second demo](#60-second-demo) · [Mutation benchmark](#epistemic-mutation-testing) · [Install](#install) · [Evidence Warrants](#evidence-warrants) · [Architecture](#architecture)
 
 </div>
 
@@ -55,7 +55,7 @@ That distinction is the product: **a number can be correct while the conclusion 
 
 ### PyPI
 
-The v0.2 release workflow publishes tagged distributions through PyPI Trusted Publishing:
+The tagged release workflow publishes distributions through PyPI Trusted Publishing:
 
 ```bash
 python -m pip install answerable-data
@@ -63,7 +63,7 @@ answerable doctor
 answerable demo
 ```
 
-Until the first v0.2 tag is published, install the current source checkout:
+Until the first public tag is published, install the current source checkout:
 
 ```bash
 git clone https://github.com/Jairogelpi/answerable_data.git
@@ -76,7 +76,7 @@ answerable doctor
 answerable demo
 ```
 
-`answerable doctor` verifies the runtime and core dependencies. A release is also tested by installing the built wheel into a clean virtual environment and running the demo from that wheel.
+`answerable doctor` verifies the runtime and core dependencies. A release is also tested by installing the built wheel into a clean virtual environment and running the product benchmarks from that wheel.
 
 ## Golden cases
 
@@ -89,6 +89,29 @@ Answerable ships three deliberately adversarial first-run cases:
 | `answerable demo maturity` | Recent cohorts have not completed the 90-day outcome window | `immature_cohort` |
 
 The same cases are readable as normal repository fixtures under [`examples/`](examples/). They are not hand-authored verdicts: the engine executes checks against the data and question contract.
+
+## Epistemic Mutation Testing
+
+Ordinary benchmarks ask whether a system got an answer right. Answerable also tests whether the system **updates the conclusion correctly when the evidence changes**.
+
+```bash
+answerable benchmark mutations --output runs/epistemic-mutations
+```
+
+The benchmark executes **12 scenarios × 4 evidence mutations = 48 paired tests** through the real `AssessmentRunner`.
+
+| Mutation family | What changes | Oracle |
+| --- | --- | --- |
+| `irrelevant_noise` | Only an analytically irrelevant field changes | `KEEP` |
+| `effect_attenuation` | The effect keeps its direction but materially weakens | `QUALIFY` |
+| `comparison_collapse` | Positivity/comparison support disappears | `RETRACT` |
+| `outcome_reversal` | The observed direction flips | `REVERSE` |
+
+A release passes only when all 48 transitions are correct, the unsafe-`KEEP` rate is zero, every family scores 100%, and the semantic report reproduces with the same hash independent of output directory.
+
+The report is written to `mutation_report.json` and includes the baseline/mutated verdicts, effect sizes, blockers, expected action and observed action for every pair.
+
+For external model comparison, the evaluator requires a complete **3 agents × 2 repetitions × 48 pairs = 288 decisions** matrix and reports paired oracle accuracy, unsafe-`KEEP` rate and repeat consistency. Nondeterministic external model runs are deliberately kept outside the package release gate. The locked protocol is documented in [`benchmarks/epistemic_mutations/`](benchmarks/epistemic_mutations/).
 
 ## Assess your own data
 
@@ -145,7 +168,8 @@ Examples of failures it is designed to surface include:
 - target or temporal leakage;
 - unsafe joins and incompatible grain;
 - underpowered or invalid experiments;
-- unsupported causal, predictive, diagnostic or prescriptive language.
+- unsupported causal, predictive, diagnostic or prescriptive language;
+- failure to retract, qualify or reverse a claim after evidence-changing mutations.
 
 The core rule is:
 
@@ -166,7 +190,7 @@ The core rule is:
 
 ## Engineering evidence
 
-The project is specification-driven and fail-closed. The verification suite enforces branch-aware coverage of at least 95%, strict mypy, Ruff, public-schema validation, requirement traceability, clean package build/install and CodeQL.
+The project is specification-driven and fail-closed. The verification suite enforces branch-aware coverage of at least 95%, strict mypy, Ruff, public-schema validation, requirement traceability, clean package build/install, the 48-pair Epistemic Mutation Testing release gate and CodeQL.
 
 The current engine includes:
 
@@ -177,6 +201,7 @@ The current engine includes:
 - guarded DuckDB and restricted Python execution;
 - typed evidence graphs and deterministic verdict precedence;
 - immutable, verifiable Evidence Warrants;
+- paired epistemic mutation testing and external-agent scoring;
 - SQLite, DuckDB and PostgreSQL-compatible read-only connectors;
 - audit, retention and multi-tenant governance primitives;
 - API, MCP and HTML contract surfaces.
@@ -185,19 +210,20 @@ The current engine includes:
 
 ```text
 src/answerable/
-├── application/   end-to-end assessment orchestration
-├── framing/       question contracts
-├── ingestion/     immutable file intake
-├── analysis/      grain, joins and metrics
-├── quality/       data and temporal validity
-├── statistics/    experiments and inference
-├── causal/        identification contracts
-├── decision/      predictive/diagnostic/prescriptive rules
-├── execution/     guarded DuckDB and Python
-├── evidence/      graph, claims and verdicts
-├── warrants/      canonical signed artifacts
-├── enterprise/    connectors and governance
-└── interfaces/    API and MCP contracts
+├── application/          end-to-end assessment orchestration
+├── framing/              question contracts
+├── ingestion/            immutable file intake
+├── analysis/             grain, joins and metrics
+├── quality/              data and temporal validity
+├── statistics/           experiments and inference
+├── causal/               identification contracts
+├── decision/             predictive/diagnostic/prescriptive rules
+├── execution/            guarded DuckDB and Python
+├── evidence/             graph, claims and verdicts
+├── warrants/             canonical signed artifacts
+├── mutation_benchmark.py paired epistemic transition benchmark
+├── enterprise/           connectors and governance
+└── interfaces/           API and MCP contracts
 ```
 
 `docs/PRODUCT_SPEC.md` is normative. `requirements/traceability.yaml` maps verified requirements to implementation and tests.
@@ -210,11 +236,11 @@ make verify
 make build
 ```
 
-A contribution is not complete until formatting, linting, strict typing, tests, coverage, schemas and traceability pass. See [CONTRIBUTING.md](CONTRIBUTING.md).
+A contribution is not complete until formatting, linting, strict typing, tests, coverage, schemas, traceability and the deterministic benchmark gate pass. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Current boundary
 
-Answerable is still pre-1.0 software. The end-to-end assessment path, golden demos, validity core, warrants and verification path are executable. Some web/API/MCP surfaces remain contracts rather than a finished hosted product. Do not use production-sensitive datasets without an independent security and methodological review.
+Answerable is still pre-1.0 software. The end-to-end assessment path, golden demos, mutation benchmark, validity core, warrants and verification path are executable. Some web/API/MCP surfaces remain contracts rather than a finished hosted product. Do not use production-sensitive datasets without an independent security and methodological review.
 
 See [ROADMAP.md](ROADMAP.md), [SECURITY.md](SECURITY.md), [SUPPORT.md](SUPPORT.md) and [CITATION.cff](CITATION.cff).
 
