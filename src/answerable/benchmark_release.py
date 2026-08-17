@@ -178,11 +178,10 @@ def freeze_benchmark(output_directory: Path) -> BenchmarkRelease:
         (output_directory / name).write_text(text, encoding="utf-8", newline="\n")
     sums = "".join(f"{checksums[name]}  {name}\n" for name in _ARTIFACTS)
     (output_directory / "SHA256SUMS").write_text(sums, encoding="utf-8", newline="\n")
-    manifest = _manifest()
     return BenchmarkRelease(
         release_id=RELEASE_ID,
-        case_count=int(manifest["case_count"]),  # type: ignore[arg-type]
-        scenario_count=int(manifest["scenario_count"]),  # type: ignore[arg-type]
+        case_count=len(benchmark_pairs()),
+        scenario_count=len(benchmark_scenarios()),
         release_hash=_digest(sums),
         checksums=checksums,
     )
