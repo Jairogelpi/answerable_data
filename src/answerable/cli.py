@@ -6,6 +6,7 @@ import platform
 from collections.abc import Sequence
 from importlib.metadata import version
 from pathlib import Path
+from typing import cast
 
 from answerable.domain.models import Verdict
 
@@ -28,7 +29,9 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("doctor", help="Check that the local Answerable runtime is ready.")
 
     demo = subparsers.add_parser("demo", help="Run a built-in adversarial analytical case.")
-    demo.add_argument("case", nargs="?", choices=("causal", "grain", "maturity"), default="causal")
+    demo.add_argument(
+        "case", nargs="?", choices=("causal", "grain", "maturity"), default="causal"
+    )
     demo.add_argument("--output", type=Path, default=None)
 
     assess = subparsers.add_parser("assess", help="Run data and a question to an Evidence Warrant.")
@@ -133,7 +136,6 @@ def _demo(args: argparse.Namespace, *, json_output: bool) -> tuple[int, dict[str
         "forbidden_claims": list(run.forbidden_claims),
         "artifacts": {name: str(path) for name, path in sorted(run.artifacts.items())},
     }
-    # A blocked verdict is the expected successful outcome of an adversarial demo.
     return 0, payload
 
 
@@ -185,7 +187,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     elif args.command == "doctor":
         print(f"Answerable {payload['version']}")
         print(f"Python {payload['python']}")
-        for dependency, status in payload["dependencies"].items():
+        dependencies = cast(dict[str, str], payload["dependencies"])
+        for dependency, status in dependencies.items():
             marker = "+" if status == "ok" else "x"
             print(f"{marker} {dependency}: {status}")
         print(f"Status: {payload['status']}")
