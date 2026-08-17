@@ -1,0 +1,7 @@
+customer_id,acquisition_date,campaign_exposed,retained_90d,acquisition_channel
+m01,2025-01-01T00:00:00+00:00,0,0,mixed
+m02,2025-01-02T00:00:00+00:00,0,1,mixed
+m03,2025-01-03T00:00:00+00:00,1,1,mixed
+m04,2025-01-04T00:00:00+00:00,1,1,mixed
+m05,2025-05-15T00:00:00+00:00,0,0,mixed
+m06,2025-05-16T00:00:00+00:00,1,1,mixed
