@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">AI agent workflow with and without Answerable</title>
+  <desc id="desc">Comparison showing an AI agent making an unsupported causal claim without Answerable, and a guarded workflow where Answerable blocks unsupported claims and returns a qualified conclusion.</desc>
+  <rect width="1600" height="1000" fill="#ffffff"/>
+  <style>
+    .h1{font:700 52px Arial,Helvetica,sans-serif;letter-spacing:1px}.label{font:700 30px Arial,Helvetica,sans-serif}.body{font:400 24px Arial,Helvetica,sans-serif}.small{font:400 21px Arial,Helvetica,sans-serif}.claim{font:700 31px Arial,Helvetica,sans-serif}.line{stroke:#202124;stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round}.muted{stroke:#d7d7d7;stroke-width:2}.red{fill:#c5221f}.green{fill:#126b4d}.dark{fill:#202124}
+  </style>
+  <text x="42" y="84" class="h1 red">WITHOUT ANSWERABLE</text>
+  <g transform="translate(86 150)">
+    <ellipse cx="62" cy="26" rx="50" ry="22" fill="none" stroke="#202124" stroke-width="5"/>
+    <path d="M12 26v76c0 12 22 22 50 22s50-10 50-22V26" class="line"/>
+    <path d="M12 64c0 12 22 22 50 22s50-10 50-22M12 101c0 12 22 22 50 22s50-10 50-22" class="line"/>
+    <text x="62" y="176" text-anchor="middle" class="label dark">Dataset</text>
+  </g>
+  <path d="M245 220H385" class="line"/><path d="M385 220l-24-18m24 18-24 18" class="line"/>
+  <g transform="translate(425 148)">
+    <rect x="18" y="38" width="110" height="90" rx="22" fill="none" stroke="#202124" stroke-width="5"/>
+    <circle cx="55" cy="78" r="10" fill="none" stroke="#202124" stroke-width="5"/><circle cx="92" cy="78" r="10" fill="none" stroke="#202124" stroke-width="5"/>
+    <path d="M62 106h24M73 38V14m0 0a7 7 0 1 0 0-14 7 7 0 0 0 0 14M18 70H5v30h13m110-30h13v30h-13" class="line"/>
+    <text x="73" y="182" text-anchor="middle" class="label dark">AI Agent</text>
+  </g>
+  <path d="M600 220H742" class="line"/><path d="M742 220l-24-18m24 18-24 18" class="line"/>
+  <rect x="782" y="154" width="366" height="150" rx="16" fill="#fff8f8" stroke="#c5221f" stroke-width="2"/>
+  <text x="965" y="213" text-anchor="middle" class="claim red">“Campaign X</text><text x="965" y="260" text-anchor="middle" class="claim red">caused +18% sales”</text>
+  <path d="M1235 176l76 76m0-76-76 76" stroke="#d93025" stroke-width="14" stroke-linecap="square"/>
+  <line x1="40" y1="394" x2="1560" y2="394" class="muted"/>
+  <text x="42" y="478" class="h1 green">WITH ANSWERABLE</text>
+  <g transform="translate(86 545)">
+    <ellipse cx="62" cy="26" rx="50" ry="22" fill="none" stroke="#202124" stroke-width="5"/>
+    <path d="M12 26v76c0 12 22 22 50 22s50-10 50-22V26" class="line"/><path d="M12 64c0 12 22 22 50 22s50-10 50-22M12 101c0 12 22 22 50 22s50-10 50-22" class="line"/>
+    <text x="62" y="176" text-anchor="middle" class="label dark">Dataset</text>
+  </g>
+  <path d="M245 615H300" class="line"/><path d="M300 615l-22-17m22 17-22 17" class="line"/>
+  <g transform="translate(323 535)">
+    <path d="M72 16c28 20 48 22 48 22v52c0 42-26 69-48 82-22-13-48-40-48-82V38s20-2 48-22z" fill="#f3fbf7" stroke="#126b4d" stroke-width="5"/>
+    <path d="M48 90l17 17 34-39" fill="none" stroke="#126b4d" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="72" y="216" text-anchor="middle" class="label dark">Answerable</text>
+  </g>
+  <path d="M480 615H530" class="line"/><path d="M530 615l-22-17m22 17-22 17" class="line"/>
+  <rect x="550" y="526" width="300" height="212" rx="16" fill="#f3fbf7" stroke="#126b4d" stroke-width="2"/>
+  <text x="700" y="582" text-anchor="middle" class="label green">BLOCKED</text><text x="700" y="625" text-anchor="middle" class="body dark">Reason:</text><text x="700" y="662" text-anchor="middle" class="small dark">insufficient overlap /</text><text x="700" y="695" text-anchor="middle" class="small dark">temporal maturity /</text><text x="700" y="728" text-anchor="middle" class="small dark">statistical power</text>
+  <path d="M875 615H930" class="line"/><path d="M930 615l-22-17m22 17-22 17" class="line"/>
+  <g transform="translate(958 540)">
+    <rect x="18" y="38" width="110" height="90" rx="22" fill="none" stroke="#202124" stroke-width="5"/>
+    <circle cx="55" cy="78" r="10" fill="none" stroke="#202124" stroke-width="5"/><circle cx="92" cy="78" r="10" fill="none" stroke="#202124" stroke-width="5"/>
+    <path d="M62 106h24M73 38V14m0 0a7 7 0 1 0 0-14 7 7 0 0 0 0 14M18 70H5v30h13m110-30h13v30h-13" class="line"/>
+    <text x="73" y="182" text-anchor="middle" class="label dark">AI Agent</text>
+  </g>
+  <path d="M1128 615H1178" class="line"/><path d="M1178 615l-22-17m22 17-22 17" class="line"/>
+  <rect x="1200" y="545" width="250" height="150" rx="16" fill="#f3fbf7" stroke="#126b4d" stroke-width="2"/>
+  <text x="1325" y="596" text-anchor="middle" class="label green">Qualified</text><text x="1325" y="635" text-anchor="middle" class="body green">conclusion based</text><text x="1325" y="671" text-anchor="middle" class="body green">on valid evidence</text>
+  <path d="M1480 615l24 25 52-63" fill="none" stroke="#35a66f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="100" y1="798" x2="515" y2="798" class="muted"/><line x1="1085" y1="798" x2="1500" y2="798" class="muted"/><text x="800" y="810" text-anchor="middle" class="label dark">THE COMBINATION</text>
+  <rect x="100" y="840" width="430" height="116" rx="14" fill="#fafafa"/><text x="130" y="882" class="label dark">AI Agent</text><text x="130" y="918" class="body dark">explores, explains, proposes conclusions</text>
+  <text x="554" y="914" class="h1 dark">+</text>
+  <rect x="610" y="840" width="430" height="116" rx="14" fill="#fafafa"/><text x="640" y="882" class="label dark">Answerable</text><text x="640" y="918" class="body dark">verifies whether evidence supports them</text>
+  <text x="1060" y="914" class="h1 dark">=</text><text x="1130" y="914" class="label green">Answers you can trust.</text>
+</svg>
