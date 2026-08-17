@@ -1,0 +1,53 @@
+name: Sync GitHub surface
+
+on:
+  push:
+    branches:
+      - agent/sync-v0.3.0-github-surface
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/sync-v0.3.0-github-surface
+          fetch-depth: 0
+
+      - name: Embed agent + Answerable visual in README
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("README.md")
+          text = path.read_text(encoding="utf-8")
+          image = '<img src="docs/answerable-agent-workflow.svg" alt="AI agent workflow with and without Answerable" width="100%">'
+          if image not in text:
+              marker = '![Answerable terminal demo](docs/demo.svg)\n'
+              block = '''\n### AI agent + Answerable\n\nThe agent explores and explains; Answerable deterministically checks whether the evidence supports the conclusion before it reaches a user.\n\n<img src="docs/answerable-agent-workflow.svg" alt="AI agent workflow with and without Answerable" width="100%">\n'''
+              if marker not in text:
+                  raise SystemExit("README insertion marker not found")
+              text = text.replace(marker, marker + block, 1)
+              path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Install canonical Apache-2.0 license text
+        run: curl -fsSL https://www.apache.org/licenses/LICENSE-2.0.txt -o LICENSE
+
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/sync-github-surface.yml
+
+      - name: Commit synchronized repository surface
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md LICENSE .github/workflows/sync-github-surface.yml
+          if git diff --cached --quiet; then
+            echo "Nothing to update."
+            exit 0
+          fi
+          git commit -m "docs: synchronize v0.3.0 GitHub surface"
+          git push origin HEAD:agent/sync-v0.3.0-github-surface
