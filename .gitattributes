@@ -1,0 +1,3 @@
+# Frozen benchmark releases are hash-addressed. Keep them byte-identical on
+# every platform so checksums verify after a clone on Windows.
+benchmarks/releases/** -text
