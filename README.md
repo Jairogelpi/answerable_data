@@ -368,7 +368,7 @@ src/answerable/
 ├── warrants/             canonical signed artifacts
 ├── mutation_benchmark.py paired epistemic transition benchmark
 ├── enterprise/           connectors and governance
-└── interfaces/           API and MCP contracts
+└── interfaces/           real MCP server, API/HTML contracts
 ```
 
 `docs/PRODUCT_SPEC.md` is normative. `requirements/traceability.yaml` maps verified requirements to implementation and tests.
@@ -385,7 +385,7 @@ A contribution is not complete until formatting, linting, strict typing, tests, 
 
 ## Current boundary
 
-Answerable is still pre-1.0 software. The end-to-end assessment path, golden demos, mutation benchmark, validity core, warrants and verification path are executable. Some web/API/MCP surfaces remain contracts rather than a finished hosted product. Do not use production-sensitive datasets without an independent security and methodological review.
+Answerable is still pre-1.0 software. The end-to-end assessment path, golden demos, mutation benchmark, validity core, warrants, verification path and MCP server are executable. The web/HTTP API surface remains a contract rather than a finished hosted product. Do not use production-sensitive datasets without an independent security and methodological review.
 
 See [ROADMAP.md](ROADMAP.md), [SECURITY.md](SECURITY.md), [SUPPORT.md](SUPPORT.md) and [CITATION.cff](CITATION.cff).
 
