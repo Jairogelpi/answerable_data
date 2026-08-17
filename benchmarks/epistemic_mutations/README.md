@@ -34,7 +34,8 @@ The release gate requires:
 
 - exactly 48 paired tests;
 - 100% oracle-action accuracy;
-- 0% unsafe `KEEP` decisions on `RETRACT` or `REVERSE` cases;
+- 0% unsafe `KEEP` decisions on `RETRACT` or `REVERSE` opportunities;
+- 0% overreaction on `KEEP` opportunities;
 - 100% accuracy in every mutation family;
 - deterministic reproduction of the same semantic report hash independent of output directory.
 
@@ -44,7 +45,16 @@ The release gate requires:
 
 LLM comparisons are deliberately separated from the deterministic release gate. Model output is nondeterministic and must not make package releases flaky.
 
-A comparative run uses **3 independently identified agents × 2 repetitions × 48 pairs = 288 decisions**. Every decision has this logical schema:
+Export the blind evidence pairs:
+
+```bash
+python scripts/export_mutation_agent_cases.py \
+  --output runs/emt-agent-cases.jsonl
+```
+
+The exporter intentionally omits the oracle action. `pair_id` is harness metadata and contains the mutation-family name; **do not include `pair_id` in the prompt sent to the evaluated model**. The model should receive only the question, previous conclusion, baseline evidence, mutated evidence, allowed action tokens and instruction.
+
+A comparative run uses **3 independently identified agents × 2 repetitions × 48 pairs = 288 decisions**. Store the returned actions as JSONL records with this logical schema:
 
 ```json
 {
@@ -55,13 +65,21 @@ A comparative run uses **3 independently identified agents × 2 repetitions × 4
 }
 ```
 
+Score the complete matrix:
+
+```bash
+python scripts/score_mutation_agents.py runs/emt-agent-results.jsonl \
+  --output runs/emt-agent-report.json
+```
+
 The evaluator rejects an incomplete matrix. For each agent it reports:
 
 - paired oracle accuracy;
-- unsafe `KEEP` rate;
+- unsafe `KEEP` rate on cases that require `RETRACT` or `REVERSE`;
+- overreaction rate on cases that require `KEEP`;
 - repeat-to-repeat consistency.
 
-The core library exposes `evaluate_agent_matrix(...)` for this scoring. A result must not be described as an LLM comparison unless those 288 decisions came from actual independent model executions. Synthetic or heuristic baselines may be useful for tests, but are not LLM evidence.
+The core library exposes `evaluate_agent_matrix(...)` for the same scoring. A result must not be described as an LLM comparison unless all 288 decisions came from actual independent model executions under the blind protocol. Synthetic or heuristic baselines may be useful for tests, but are not LLM evidence.
 
 ## Why paired mutation testing
 
