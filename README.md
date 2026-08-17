@@ -24,6 +24,12 @@ Your code has tests. Your data has tests. **Your conclusions should too.**
 
 ![Answerable terminal demo](docs/demo.svg)
 
+### AI agent + Answerable
+
+The agent explores and explains; Answerable deterministically checks whether the evidence supports the conclusion before it reaches a user.
+
+<img src="docs/answerable-agent-workflow.svg" alt="AI agent workflow with and without Answerable" width="100%">
+
 ## The problem
 
 Analytics systems are good at computing answers. LLMs are good at explaining them. Neither fact guarantees that the evidence justifies the conclusion.
