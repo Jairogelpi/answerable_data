@@ -30,9 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("doctor", help="Check that the local Answerable runtime is ready.")
 
     demo = subparsers.add_parser("demo", help="Run a built-in adversarial analytical case.")
-    demo.add_argument(
-        "case", nargs="?", choices=("causal", "grain", "maturity"), default="causal"
-    )
+    demo.add_argument("case", nargs="?", choices=("causal", "grain", "maturity"), default="causal")
     demo.add_argument("--output", type=Path, default=None)
 
     assess = subparsers.add_parser("assess", help="Run data and a question to an Evidence Warrant.")
