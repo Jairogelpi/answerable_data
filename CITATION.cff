@@ -5,8 +5,8 @@ type: software
 authors:
   - family-names: "Gelpi Moreno"
     given-names: "Jairo"
-version: 0.1.0
-date-released: 2026-07-31
+version: 0.3.0
+date-released: 2026-08-17
 repository-code: "https://github.com/Jairogelpi/answerable_data"
 url: "https://github.com/Jairogelpi/answerable_data"
 license: Apache-2.0
@@ -16,3 +16,6 @@ keywords:
   - causal inference
   - evidence
   - AI safety
+  - AI agents
+  - MCP
+  - epistemic mutation testing
