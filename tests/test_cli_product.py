@@ -86,3 +86,19 @@ def test_mutation_benchmark_json_exposes_reproducibility_hash(
     assert payload["overreaction_rate"] == 0.0
     assert payload["release_pass"] is True
     assert len(payload["reproducibility_hash"]) == 64
+    assert set(payload["class_accuracy"].values()) == {1.0}
+
+
+def test_benchmark_freeze_writes_hash_addressed_release(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    release = tmp_path / "emt-v1"
+    code = main(("--json", "benchmark", "--freeze", "--output", str(release)))
+    payload = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert payload["release_id"] == "emt-v1"
+    assert payload["case_count"] == 48
+    assert len(payload["release_hash"]) == 64
+    assert (release / "SHA256SUMS").is_file()
+    assert (release / "protocol.md").is_file()

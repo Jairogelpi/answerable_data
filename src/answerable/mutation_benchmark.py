@@ -21,14 +21,35 @@ class MutationAction(StrEnum):
 class MutationFamily(StrEnum):
     IRRELEVANT_NOISE = "irrelevant_noise"
     EFFECT_ATTENUATION = "effect_attenuation"
-    COMPARISON_COLLAPSE = "comparison_collapse"
+    EVIDENCE_INVALIDATION = "evidence_invalidation"
     OUTCOME_REVERSAL = "outcome_reversal"
+
+
+class FailureClass(StrEnum):
+    """Family of analytical failure a scenario is built to exercise.
+
+    Each class invalidates evidence through a different mechanism, so the
+    benchmark measures whether a system revises conclusions across distinct
+    kinds of broken analysis rather than one repeated causal pattern.
+    """
+
+    CAUSAL = "causal"
+    TEMPORAL = "temporal"
+    DATA_MODEL = "data_model"
+
+
+@dataclass(frozen=True, slots=True)
+class Scenario:
+    scenario_id: str
+    failure_class: FailureClass
+    variant: str
 
 
 @dataclass(frozen=True, slots=True)
 class MutationPair:
     pair_id: str
     scenario_id: str
+    failure_class: FailureClass
     family: MutationFamily
     expected_action: MutationAction
 
@@ -54,6 +75,7 @@ class MutationBenchmarkReport:
     retract_recall: float
     reverse_recall: float
     family_accuracy: dict[str, float]
+    class_accuracy: dict[str, float]
     reproducibility_hash: str
     release_pass: bool
     observations: tuple[MutationObservation, ...]
@@ -87,37 +109,102 @@ class AgentBenchmarkReport:
 _ACTION_BY_FAMILY = {
     MutationFamily.IRRELEVANT_NOISE: MutationAction.KEEP,
     MutationFamily.EFFECT_ATTENUATION: MutationAction.QUALIFY,
-    MutationFamily.COMPARISON_COLLAPSE: MutationAction.RETRACT,
+    MutationFamily.EVIDENCE_INVALIDATION: MutationAction.RETRACT,
     MutationFamily.OUTCOME_REVERSAL: MutationAction.REVERSE,
 }
+
+_VARIANTS: dict[FailureClass, tuple[str, ...]] = {
+    FailureClass.CAUSAL: (
+        "positivity_collapse",
+        "channel_confounding",
+        "control_arm_shrink",
+        "stratum_imbalance",
+    ),
+    FailureClass.TEMPORAL: (
+        "immature_cohort",
+        "late_acquisition",
+        "cutoff_shift",
+        "window_extension",
+    ),
+    FailureClass.DATA_MODEL: (
+        "join_fanout",
+        "grain_duplication",
+        "entity_alias_collision",
+        "repeated_orders",
+    ),
+}
+
+_BLOCKER_BY_CLASS = {
+    FailureClass.CAUSAL: "positivity_violation",
+    FailureClass.TEMPORAL: "immature_cohort",
+    FailureClass.DATA_MODEL: "duplicate_entities",
+}
+
+
+def benchmark_scenarios() -> tuple[Scenario, ...]:
+    return tuple(
+        Scenario(
+            scenario_id=f"{failure_class.value}-{index:02d}",
+            failure_class=failure_class,
+            variant=variant,
+        )
+        for failure_class, variants in _VARIANTS.items()
+        for index, variant in enumerate(variants, start=1)
+    )
+
+
+def expected_blocker(failure_class: FailureClass) -> str:
+    """Finding a correct system must raise when this class loses its evidence."""
+    return _BLOCKER_BY_CLASS[failure_class]
 
 
 def benchmark_pairs() -> tuple[MutationPair, ...]:
     return tuple(
         MutationPair(
-            pair_id=f"emt-{scenario:02d}-{family.value}",
-            scenario_id=f"scenario-{scenario:02d}",
+            pair_id=f"emt-{scenario.scenario_id}-{family.value}",
+            scenario_id=scenario.scenario_id,
+            failure_class=scenario.failure_class,
             family=family,
             expected_action=_ACTION_BY_FAMILY[family],
         )
-        for scenario in range(1, 13)
+        for scenario in benchmark_scenarios()
         for family in MutationFamily
     )
 
 
-def _question_yaml(scenario_id: str) -> str:
-    return f"""question_id: q_{scenario_id.replace("-", "_")}
-raw_question: "Did exposure increase 90-day retention?"
-normalized_question: "Did exposure increase 90-day retention?"
+_FRAMING: dict[FailureClass, tuple[str, str, str]] = {
+    FailureClass.CAUSAL: (
+        "Did the campaign increase 90-day retention?",
+        "retention_90d",
+        "Share of customers retained 90 days after acquisition",
+    ),
+    FailureClass.TEMPORAL: (
+        "Did the onboarding change improve 90-day activation?",
+        "activation_90d",
+        "Share of accounts active 90 days after signup",
+    ),
+    FailureClass.DATA_MODEL: (
+        "Did the pricing change improve 90-day account survival?",
+        "survival_90d",
+        "Share of accounts still billing 90 days after the change",
+    ),
+}
+
+
+def _question_yaml(scenario: Scenario) -> str:
+    question, metric_id, definition = _FRAMING[scenario.failure_class]
+    return f"""question_id: q_{scenario.scenario_id.replace("-", "_")}
+raw_question: "{question}"
+normalized_question: "{question}"
 language: en
 analysis_type: causal
 unit_of_analysis: customer
 population:
-  description: "Synthetic customers in {scenario_id}"
+  description: "Synthetic customers in {scenario.scenario_id} ({scenario.variant})"
   inclusion: ["rows in this benchmark case"]
 outcome:
-  metric_id: retention_90d
-  definition: "Share retained after 90 days"
+  metric_id: {metric_id}
+  definition: "{definition}"
   value_type: ratio
   numerator: retained_90d
   denominator: customer_id
@@ -136,7 +223,7 @@ causal:
   treatment: exposed
   outcome: retained_90d
   population: "Synthetic benchmark customers"
-  estimand: "Average treatment effect of exposure on 90-day retention"
+  estimand: "Average treatment effect of exposure on {metric_id}"
   strategy: regression_adjustment
   adjustment_set: ["channel"]
   assumptions:
@@ -144,53 +231,68 @@ causal:
   falsification_checks: []
   sensitivity_checks: []
 claims:
-  - text: "Exposed customers had higher observed retention."
+  - text: "Exposed customers had higher observed {metric_id}."
     claim_class: descriptive
-  - text: "Exposure caused higher retention."
+  - text: "Exposure caused higher {metric_id}."
     claim_class: causal
 """
 
 
-def _scenario_counts(scenario: int) -> tuple[int, int, int]:
+def _scenario_counts(scenario: Scenario) -> tuple[int, int, int]:
+    """Group size and positive counts, varied per scenario so cases are not clones."""
+    offset = int(scenario.scenario_id.rsplit("-", 1)[1])
     size = 12
-    control_positive = 2 + (scenario % 3)
-    treated_positive = 8 + (scenario % 3)
+    control_positive = 2 + (offset % 3)
+    treated_positive = 8 + (offset % 3)
     return size, control_positive, treated_positive
 
 
-def _rows(scenario: int, family: MutationFamily | None) -> str:
+def _rows(scenario: Scenario, family: MutationFamily | None) -> str:
+    """Render one benchmark case.
+
+    The three non-invalidating families move the effect only. Evidence
+    invalidation is class-specific: it destroys the property that made the
+    scenario's design valid in the first place.
+    """
     size, control_positive, treated_positive = _scenario_counts(scenario)
     if family is MutationFamily.EFFECT_ATTENUATION:
         treated_positive = control_positive + 2
     elif family is MutationFamily.OUTCOME_REVERSAL:
         treated_positive = max(0, control_positive - 1)
+    invalidated = family is MutationFamily.EVIDENCE_INVALIDATION
+    failure_class = scenario.failure_class
 
     records = ["customer_id,acquisition_date,exposed,retained_90d,channel,noise"]
     for treatment in (0, 1):
         positives = control_positive if treatment == 0 else treated_positive
         for index in range(size):
-            customer_id = f"s{scenario:02d}-t{treatment}-{index:02d}"
+            customer_id = f"{scenario.scenario_id}-t{treatment}-{index:02d}"
             channel = "mixed"
-            if family is MutationFamily.COMPARISON_COLLAPSE:
+            acquired = f"2025-01-{1 + (index % 20):02d}T00:00:00+00:00"
+            if invalidated and failure_class is FailureClass.CAUSAL:
+                # Every stratum now holds a single treatment level.
                 channel = "organic" if treatment == 0 else "paid"
+            elif invalidated and failure_class is FailureClass.TEMPORAL:
+                # Acquired too late to have completed the 90-day window.
+                acquired = f"2025-06-{1 + (index % 20):02d}T00:00:00+00:00"
+            elif invalidated and failure_class is FailureClass.DATA_MODEL:
+                # A join fan-out collapses two entities onto one identifier.
+                customer_id = f"{scenario.scenario_id}-t{treatment}-{index // 2:02d}"
             noise = "mutated" if family is MutationFamily.IRRELEVANT_NOISE else "baseline"
             outcome = 1 if index < positives else 0
-            records.append(
-                f"{customer_id},2025-01-{1 + (index % 20):02d}T00:00:00+00:00,"
-                f"{treatment},{outcome},{channel},{noise}"
-            )
+            records.append(f"{customer_id},{acquired},{treatment},{outcome},{channel},{noise}")
     return "\n".join(records) + "\n"
 
 
-def _run_case(root: Path, scenario: int, family: MutationFamily | None) -> AssessmentRun:
+def _run_case(root: Path, scenario: Scenario, family: MutationFamily | None) -> AssessmentRun:
     label = "baseline" if family is None else family.value
-    case_dir = root / f"scenario-{scenario:02d}" / label
+    case_dir = root / scenario.scenario_id / label
     input_dir = case_dir / "input"
     input_dir.mkdir(parents=True, exist_ok=True)
     data_path = input_dir / "customers.csv"
     question_path = input_dir / "question.yaml"
     data_path.write_text(_rows(scenario, family), encoding="utf-8")
-    question_path.write_text(_question_yaml(f"scenario-{scenario:02d}"), encoding="utf-8")
+    question_path.write_text(_question_yaml(scenario), encoding="utf-8")
     return AssessmentRunner().run(
         data_sources=(data_path,),
         spec=load_spec(question_path),
@@ -222,6 +324,7 @@ def _stable_payload(observations: tuple[MutationObservation, ...]) -> list[dict[
         {
             "pair_id": item.pair.pair_id,
             "scenario_id": item.pair.scenario_id,
+            "failure_class": item.pair.failure_class.value,
             "family": item.pair.family.value,
             "expected_action": item.pair.expected_action.value,
             "observed_action": item.observed_action.value,
@@ -245,12 +348,15 @@ def _error_rate(errors: int, total: int) -> float:
 
 def run_mutation_benchmark(output_directory: Path) -> MutationBenchmarkReport:
     pairs = benchmark_pairs()
-    baselines = {scenario: _run_case(output_directory, scenario, None) for scenario in range(1, 13)}
+    scenarios = {scenario.scenario_id: scenario for scenario in benchmark_scenarios()}
+    baselines = {
+        scenario_id: _run_case(output_directory, scenario, None)
+        for scenario_id, scenario in scenarios.items()
+    }
     observations: list[MutationObservation] = []
     for pair in pairs:
-        scenario = int(pair.scenario_id.rsplit("-", 1)[1])
-        baseline = baselines[scenario]
-        mutated = _run_case(output_directory, scenario, pair.family)
+        baseline = baselines[pair.scenario_id]
+        mutated = _run_case(output_directory, scenarios[pair.scenario_id], pair.family)
         observations.append(
             MutationObservation(
                 pair=pair,
@@ -283,6 +389,17 @@ def run_mutation_benchmark(output_directory: Path) -> MutationBenchmarkReport:
         )
         for family in MutationFamily
     }
+    class_accuracy = {
+        failure_class.value: _ratio(
+            sum(
+                item.observed_action is item.pair.expected_action
+                for item in frozen
+                if item.pair.failure_class is failure_class
+            ),
+            sum(item.pair.failure_class is failure_class for item in frozen),
+        )
+        for failure_class in FailureClass
+    }
 
     def recall(action: MutationAction) -> float:
         matching = [item for item in frozen if item.pair.expected_action is action]
@@ -304,6 +421,7 @@ def run_mutation_benchmark(output_directory: Path) -> MutationBenchmarkReport:
         retract_recall=recall(MutationAction.RETRACT),
         reverse_recall=recall(MutationAction.REVERSE),
         family_accuracy=family_accuracy,
+        class_accuracy=class_accuracy,
         reproducibility_hash=digest,
         release_pass=(
             len(frozen) == 48
@@ -311,6 +429,7 @@ def run_mutation_benchmark(output_directory: Path) -> MutationBenchmarkReport:
             and unsafe_keep == 0
             and overreaction == 0
             and all(value == 1.0 for value in family_accuracy.values())
+            and all(value == 1.0 for value in class_accuracy.values())
         ),
         observations=frozen,
     )
@@ -332,6 +451,7 @@ def report_to_dict(report: MutationBenchmarkReport) -> dict[str, object]:
         "retract_recall": report.retract_recall,
         "reverse_recall": report.reverse_recall,
         "family_accuracy": report.family_accuracy,
+        "class_accuracy": report.class_accuracy,
         "reproducibility_hash": report.reproducibility_hash,
         "release_pass": report.release_pass,
         "observations": _stable_payload(report.observations),
@@ -390,13 +510,17 @@ __all__ = [
     "AgentBenchmarkReport",
     "AgentDecision",
     "AgentMetrics",
+    "FailureClass",
     "MutationAction",
     "MutationBenchmarkReport",
     "MutationFamily",
     "MutationObservation",
     "MutationPair",
+    "Scenario",
     "benchmark_pairs",
+    "benchmark_scenarios",
     "evaluate_agent_matrix",
+    "expected_blocker",
     "report_to_dict",
     "run_mutation_benchmark",
 ]

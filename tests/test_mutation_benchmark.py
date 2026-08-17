@@ -4,10 +4,13 @@ from pathlib import Path
 
 from answerable.mutation_benchmark import (
     AgentDecision,
+    FailureClass,
     MutationAction,
     MutationFamily,
     benchmark_pairs,
+    benchmark_scenarios,
     evaluate_agent_matrix,
+    expected_blocker,
     run_mutation_benchmark,
 )
 
@@ -22,6 +25,17 @@ def test_manifest_has_twelve_scenarios_and_forty_eight_pairs() -> None:
     assert len({pair.pair_id for pair in pairs}) == 48
 
 
+def test_scenarios_spread_evenly_across_failure_classes() -> None:
+    scenarios = benchmark_scenarios()
+
+    assert len(scenarios) == 12
+    assert {scenario.failure_class for scenario in scenarios} == set(FailureClass)
+    for failure_class in FailureClass:
+        matching = [item for item in scenarios if item.failure_class is failure_class]
+        assert len(matching) == 4
+        assert len({item.variant for item in matching}) == 4
+
+
 def test_mutation_benchmark_executes_runner_and_passes_release_gate(tmp_path: Path) -> None:
     report = run_mutation_benchmark(tmp_path / "bench")
 
@@ -33,16 +47,20 @@ def test_mutation_benchmark_executes_runner_and_passes_release_gate(tmp_path: Pa
     assert report.retract_recall == 1.0
     assert report.reverse_recall == 1.0
     assert set(report.family_accuracy.values()) == {1.0}
+    assert set(report.class_accuracy.values()) == {1.0}
     assert report.release_pass
     assert len(report.reproducibility_hash) == 64
     assert (tmp_path / "bench" / "mutation_report.json").is_file()
     assert all(item.baseline_verdict == "ANSWERABLE" for item in report.observations)
-    collapse = [
+    invalidated = [
         item
         for item in report.observations
-        if item.pair.family is MutationFamily.COMPARISON_COLLAPSE
+        if item.pair.family is MutationFamily.EVIDENCE_INVALIDATION
     ]
-    assert all("positivity_violation" in item.blockers for item in collapse)
+    assert len(invalidated) == 12
+    # Each failure class must be blocked by its own mechanism, not a shared one.
+    for item in invalidated:
+        assert expected_blocker(item.pair.failure_class) in item.blockers
 
 
 def test_mutation_benchmark_is_reproducible_across_directories(tmp_path: Path) -> None:

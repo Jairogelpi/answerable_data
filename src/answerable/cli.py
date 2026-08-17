@@ -39,6 +39,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     benchmark.add_argument("suite", nargs="?", choices=("mutations",), default="mutations")
     benchmark.add_argument("--output", type=Path, default=Path("answerable-benchmark/mutations"))
+    benchmark.add_argument(
+        "--freeze",
+        action="store_true",
+        help="Write the frozen, hash-addressed benchmark release instead of running it.",
+    )
 
     assess = subparsers.add_parser("assess", help="Run data and a question to an Evidence Warrant.")
     assess.add_argument("--data", action="append", type=Path, default=None, required=True)
@@ -139,9 +144,32 @@ def _demo(args: argparse.Namespace, *, json_output: bool) -> tuple[int, dict[str
     return 0, payload
 
 
+def _freeze(args: argparse.Namespace, *, json_output: bool) -> tuple[int, dict[str, object]]:
+    from answerable.benchmark_release import freeze_benchmark
+
+    release = freeze_benchmark(args.output)
+    payload: dict[str, object] = {
+        "release_id": release.release_id,
+        "case_count": release.case_count,
+        "scenario_count": release.scenario_count,
+        "release_hash": release.release_hash,
+        "checksums": release.checksums,
+        "directory": str(args.output),
+    }
+    if not json_output:
+        print(f"AnswerableBench {release.release_id} — frozen")
+        print(f"Scenarios: {release.scenario_count}")
+        print(f"Cases: {release.case_count}")
+        print(f"Release hash: {release.release_hash}")
+        print(f"Directory: {args.output}")
+    return 0, payload
+
+
 def _benchmark(args: argparse.Namespace, *, json_output: bool) -> tuple[int, dict[str, object]]:
     from answerable.mutation_benchmark import report_to_dict, run_mutation_benchmark
 
+    if args.freeze:
+        return _freeze(args, json_output=json_output)
     report = run_mutation_benchmark(args.output)
     payload = report_to_dict(report)
     payload["suite"] = args.suite
@@ -157,6 +185,8 @@ def _benchmark(args: argparse.Namespace, *, json_output: bool) -> tuple[int, dic
         print(f"REVERSE recall: {report.reverse_recall:.1%}")
         for family, accuracy in sorted(report.family_accuracy.items()):
             print(f"  {family}: {accuracy:.1%}")
+        for failure_class, accuracy in sorted(report.class_accuracy.items()):
+            print(f"  class {failure_class}: {accuracy:.1%}")
         print(f"Reproducibility: {report.reproducibility_hash}")
         print(f"Release gate: {'PASS' if report.release_pass else 'FAIL'}")
         print(f"Report: {args.output / 'mutation_report.json'}")

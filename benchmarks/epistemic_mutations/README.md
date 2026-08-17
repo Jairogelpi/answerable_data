@@ -19,16 +19,38 @@ The benchmark is paired by construction. Every scenario has a clean baseline and
 | --- | --- | --- |
 | `irrelevant_noise` | Change an unmapped noise field while keeping all analytical evidence fixed. | `KEEP` |
 | `effect_attenuation` | Reduce the observed treatment/outcome difference to less than half its baseline magnitude without reversing sign. | `QUALIFY` |
-| `comparison_collapse` | Make treatment perfectly determined by the adjustment stratum, destroying positivity. | `RETRACT` |
+| `evidence_invalidation` | Destroy the validity condition the scenario's design depends on. | `RETRACT` |
 | `outcome_reversal` | Reverse the sign of the observed group difference while preserving an otherwise valid design. | `REVERSE` |
 
 There are 12 deterministic scenarios and four mutations per scenario: **48 paired mutation tests**.
+
+## Failure classes
+
+A benchmark built on one repeated causal pattern only proves the system detects that pattern. Scenarios are spread evenly across classes, so `evidence_invalidation` breaks a different property in each and must be caught by a different check:
+
+| Class | Scenarios | Property destroyed | Blocker required |
+| --- | --- | --- | --- |
+| `causal` | 4 | Covariate overlap between treatment arms | `positivity_violation` |
+| `temporal` | 4 | Completed observation window before the cutoff | `immature_cohort` |
+| `data_model` | 4 | One row per declared unit of analysis | `duplicate_entities` |
+
+Per-class accuracy is reported alongside per-family accuracy and is part of the release gate: passing overall while failing one class does not pass.
 
 ## Run
 
 ```bash
 answerable benchmark mutations --output runs/epistemic-mutations
 ```
+
+## Frozen release
+
+Results are only meaningful against a benchmark that cannot be edited after seeing them. `emt-v1` is frozen and hash-addressed:
+
+```bash
+answerable benchmark --freeze --output benchmarks/releases/emt-v1
+```
+
+This writes `manifest.json`, `cases.jsonl`, `oracle.json`, `protocol.md` and `SHA256SUMS`. The release hash is the digest of `SHA256SUMS`; recomputing it confirms the cases are unchanged. `cases.jsonl` carries no expected actions, so it can be handed to a blind run directly. Revising the cases means publishing a new release id, not editing this one.
 
 The release gate requires:
 
@@ -60,7 +82,7 @@ A comparative run uses **3 independently identified agents × 2 repetitions × 4
 {
   "agent_id": "provider/model-or-agent-id",
   "repetition": 1,
-  "pair_id": "emt-01-comparison_collapse",
+  "pair_id": "emt-causal-01-evidence_invalidation",
   "action": "RETRACT"
 }
 ```

@@ -105,10 +105,14 @@ The benchmark executes **12 scenarios × 4 evidence mutations = 48 paired tests*
 | --- | --- | --- |
 | `irrelevant_noise` | Only an analytically irrelevant field changes | `KEEP` |
 | `effect_attenuation` | The effect keeps its direction but materially weakens | `QUALIFY` |
-| `comparison_collapse` | Positivity/comparison support disappears | `RETRACT` |
+| `evidence_invalidation` | A validity condition the design depends on is destroyed | `RETRACT` |
 | `outcome_reversal` | The observed direction flips | `REVERSE` |
 
-A release passes only when all 48 transitions are correct, the unsafe-`KEEP` rate is zero, every family scores 100%, and the semantic report reproduces with the same hash independent of output directory.
+Scenarios span three failure classes — `causal` (positivity), `temporal` (immature cohorts) and `data_model` (broken grain) — so invalidation is caught by a different check in each rather than one repeated pattern.
+
+A release passes only when all 48 transitions are correct, the unsafe-`KEEP` rate is zero, every family *and every failure class* scores 100%, and the semantic report reproduces with the same hash independent of output directory.
+
+The case list is frozen and hash-addressed as `emt-v1` (`answerable benchmark --freeze`), so published results refer to a benchmark that cannot be revised after the fact.
 
 The report is written to `mutation_report.json` and includes the baseline/mutated verdicts, effect sizes, blockers, expected action and observed action for every pair.
 
