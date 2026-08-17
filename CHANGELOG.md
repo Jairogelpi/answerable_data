@@ -4,8 +4,22 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
+- Epistemic Mutation Testing (EMT) executed through the real `AssessmentRunner`.
+- 12 deterministic scenarios crossed with four mutation families for 48 paired tests.
+- `KEEP`, `QUALIFY`, `RETRACT` and `REVERSE` transition oracles.
+- `answerable benchmark mutations` with a machine-readable `mutation_report.json`.
+- Release gates for transition accuracy, unsafe-KEEP rate and per-family accuracy.
+- Output-path-independent semantic reproducibility hashes.
+- External-agent evaluator enforcing 3 agents × 2 repetitions × 48 pairs (288 decisions).
+- Paired external-agent metrics for oracle accuracy, unsafe-KEEP rate and repeat consistency.
+- Clean-wheel CI execution of the mutation benchmark.
+
+### Changed
+- AnswerableBench now executes evidence-changing benchmark cases through the runner instead of only scoring supplied observations.
+
 ### Planned
-- Execute AnswerableBench cases through the runner instead of scoring supplied observations.
+- Publish locked external LLM comparison runs against the EMT protocol.
 - Expand epistemic mutation testing across joins, leakage, power, selection and metric drift.
 
 ## [0.2.0] - 2026-08-17
