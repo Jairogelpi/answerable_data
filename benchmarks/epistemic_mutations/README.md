@@ -4,6 +4,16 @@ Epistemic Mutation Testing (EMT) measures whether a system changes its conclusio
 
 The benchmark is paired by construction. Every scenario has a clean baseline and four deterministic mutations. The system never receives a hand-authored verdict from the benchmark runner: each baseline and mutation is executed through `AssessmentRunner`, then the transition is classified from the resulting verdict, blockers and observed effect.
 
+<img src="dashboard.svg" alt="AnswerableBench EMT results" width="640">
+
+Regenerate the dashboard after a run:
+
+```bash
+answerable benchmark mutations --output runs/epistemic-mutations
+python scripts/render_benchmark_dashboard.py runs/epistemic-mutations/mutation_report.json \
+  --output benchmarks/epistemic_mutations/dashboard.svg
+```
+
 ## Oracle actions
 
 | Action | Required behavior |

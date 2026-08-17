@@ -95,6 +95,10 @@ The same cases are readable as normal repository fixtures under [`examples/`](ex
 
 Ordinary benchmarks ask whether a system got an answer right. Answerable also tests whether the system **updates the conclusion correctly when the evidence changes**.
 
+<img src="benchmarks/epistemic_mutations/dashboard.svg" alt="AnswerableBench EMT results: 48/48 mutations passed, 0% unsafe KEEP, 0% overreaction" width="640">
+
+*Regenerate after a run with `python scripts/render_benchmark_dashboard.py <report> --output benchmarks/epistemic_mutations/dashboard.svg`.*
+
 ```bash
 answerable benchmark mutations --output runs/epistemic-mutations
 ```
