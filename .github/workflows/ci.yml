@@ -56,6 +56,10 @@ jobs:
           || test $? -eq 2
           answerable --json warrant verify --warrant runs/campaign_retention/warrant.json
 
+      - name: Run Epistemic Mutation Testing release gate
+        if: matrix.python-version == '3.12'
+        run: answerable benchmark mutations --output runs/epistemic-mutations
+
       - name: Validate requirement traceability
         run: python scripts/check_traceability.py
 
@@ -81,3 +85,4 @@ jobs:
           python -m venv /tmp/answerable-wheel
           /tmp/answerable-wheel/bin/python -m pip install dist/*.whl
           /tmp/answerable-wheel/bin/python -c "import answerable; print(answerable.__version__)"
+          /tmp/answerable-wheel/bin/answerable benchmark mutations --output /tmp/answerable-wheel-benchmark
