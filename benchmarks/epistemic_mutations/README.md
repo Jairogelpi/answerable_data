@@ -104,34 +104,36 @@ python scripts/score_mutation_agents.py runs/emt-agent-results.jsonl \
   --output runs/emt-agent-report.json
 ```
 
-### Running real CLI agents (no API keys)
+### Running real agents
 
-`scripts/run_agent_harness.py` drives the frozen `emt-v1` cases through the
-`claude` and `codex` CLIs already authenticated on this machine, spending the
-operator's own subscription rather than a metered API key:
+`scripts/run_agent_harness.py` drives the frozen `emt-v1` cases through
+three independently identified agents: Claude and Codex via their CLIs
+(already authenticated on this machine, spending the operator's own
+subscription, no API key), and Gemini via the public API (needs
+`GEMINI_API_KEY` — free-tier `gemini-2.5-flash` by default):
 
 ```bash
+export GEMINI_API_KEY=...   # only needed if "gemini" is in --agents
 python scripts/run_agent_harness.py \
   --cases benchmarks/releases/emt-v1/cases.jsonl \
   --output runs/emt-agents \
-  --agents claude,codex \
+  --agents claude,codex,gemini \
   --repetitions 2
 python scripts/score_mutation_agents.py runs/emt-agents/decisions.jsonl
 ```
 
 It writes `decisions.jsonl` (scoreable directly) and `raw.jsonl` — one record
 per call with the full prompt, raw response, resolved model, timestamp,
-latency, token usage, cost (where the CLI reports it) and the case hash, so a
-run is independently auditable.
+latency, token usage, cost (where the caller reports it) and the case hash,
+so a run is independently auditable.
 
 Two things worth knowing before trusting a run:
 
-- **Only 2 of the 3 agent slots are filled.** `evaluate_agent_matrix` requires
-  three independently identified agents; with `claude,codex` only,
-  `matrix_complete` is correctly `False` and the release-gate exit code is
-  reserved. A third agent (e.g. Gemini) needs its own CLI wired into
-  `AGENT_RUNNERS`.
-- **Both CLIs are coding-agent shells, not raw model endpoints.** The harness
+- **`evaluate_agent_matrix` requires all three agent slots filled** — 288
+  decisions from `claude,codex,gemini` — before `matrix_complete` is `True`.
+  Fewer agents or repetitions still score per-agent, but `matrix_complete`
+  correctly reports `False` and the release-gate exit code stays reserved.
+- **The CLIs are coding-agent shells, not raw model endpoints.** The harness
   strips that persona for a fair judgment call — `claude` runs with
   `--system-prompt` (replacing, not appending to, the default persona) and
   `--setting-sources ""` (no CLAUDE.md/hooks/memory); both agents run from a

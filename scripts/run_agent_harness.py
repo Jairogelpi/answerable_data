@@ -1,14 +1,17 @@
-"""Run the frozen EMT v1 cases through real CLI agents (Claude, Codex).
+"""Run the frozen EMT v1 cases through real agents (Claude, Codex, Gemini).
 
-No API keys: this shells out to the `claude` and `codex` CLIs already
-authenticated on this machine, so a run spends the operator's own
-subscription rather than a metered API key.
+Claude and Codex shell out to the `claude`/`codex` CLIs already authenticated
+on this machine, spending the operator's own subscription rather than a
+metered API key. Gemini calls the public API directly (no CLI available),
+reading GEMINI_API_KEY from the environment -- never pass it on the command
+line, where it would land in shell history and process listings.
 
 Usage:
+    export GEMINI_API_KEY=...  # only if "gemini" is in --agents
     python scripts/run_agent_harness.py \\
         --cases benchmarks/releases/emt-v1/cases.jsonl \\
         --output runs/emt-agents \\
-        --agents claude,codex \\
+        --agents claude,codex,gemini \\
         --repetitions 2
 
 Writes:
@@ -26,11 +29,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
 import tempfile
 import time
+import urllib.error
+import urllib.request
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -200,6 +206,71 @@ def _run_codex(prompt: str, *, model: str | None, scratch_dir: Path) -> AgentCal
     )
 
 
+_GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+_GEMINI_RETRY_STATUSES = {429, 500, 503}
+
+
+def _run_gemini(prompt: str, *, model: str, scratch_dir: Path) -> AgentCallResult:
+    # No official Gemini CLI to shell out to, so this calls the API directly.
+    # scratch_dir is unused (there's no cwd/persona to escape from), kept
+    # only so this runner has the same signature as the CLI-backed ones.
+    del scratch_dir
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise SystemExit("GEMINI_API_KEY is not set")
+    payload = json.dumps(
+        {
+            "systemInstruction": {"parts": [{"text": _JUDGE_SYSTEM_PROMPT}]},
+            "contents": [{"parts": [{"text": prompt}]}],
+        }
+    ).encode("utf-8")
+    url = _GEMINI_API_URL.format(model=model) + f"?key={api_key}"
+    request = urllib.request.Request(
+        url, data=payload, headers={"Content-Type": "application/json"}, method="POST"
+    )
+    start = time.perf_counter()
+    body = b""
+    status = 0
+    # The free tier returns transient 503/429 under load; two retries with a
+    # short backoff keeps a long batch run from losing calls to that alone.
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(request, timeout=_CALL_TIMEOUT_SECONDS) as response:
+                body = response.read()
+                status = response.status
+            break
+        except urllib.error.HTTPError as exc:
+            body = exc.read()
+            status = exc.code
+            if status not in _GEMINI_RETRY_STATUSES or attempt == 2:
+                break
+            time.sleep(2**attempt)
+        except urllib.error.URLError as exc:
+            body = str(exc).encode("utf-8")
+            status = 0
+            break
+    latency_ms = int((time.perf_counter() - start) * 1000)
+    try:
+        payload_response = json.loads(body)
+    except json.JSONDecodeError:
+        return AgentCallResult(None, body.decode("utf-8", "replace"), None, latency_ms, {})
+    if "error" in payload_response:
+        return AgentCallResult(
+            None, json.dumps(payload_response), None, latency_ms, {"http_status": status}
+        )
+    try:
+        text = payload_response["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError):
+        return AgentCallResult(None, json.dumps(payload_response), model, latency_ms, {})
+    metadata = {
+        "usage": payload_response.get("usageMetadata"),
+        "model_version": payload_response.get("modelVersion"),
+        "response_id": payload_response.get("responseId"),
+        "http_status": status,
+    }
+    return AgentCallResult(parse_action(text), text, model, latency_ms, metadata)
+
+
 AGENT_RUNNERS: dict[str, Callable[[str, str, Path], AgentCallResult]] = {
     "claude": lambda prompt, model, scratch_dir: _run_claude(
         prompt, model=model, scratch_dir=scratch_dir
@@ -207,8 +278,15 @@ AGENT_RUNNERS: dict[str, Callable[[str, str, Path], AgentCallResult]] = {
     "codex": lambda prompt, model, scratch_dir: _run_codex(
         prompt, model=model, scratch_dir=scratch_dir
     ),
+    "gemini": lambda prompt, model, scratch_dir: _run_gemini(
+        prompt, model=model, scratch_dir=scratch_dir
+    ),
 }
-_DEFAULT_MODEL: dict[str, str | None] = {"claude": "sonnet", "codex": None}
+_DEFAULT_MODEL: dict[str, str | None] = {
+    "claude": "sonnet",
+    "codex": None,
+    "gemini": "gemini-2.5-flash",
+}
 
 
 def _load_cases(path: Path, limit: int | None) -> list[dict[str, object]]:
@@ -337,6 +415,7 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=None, help="Use only the first N cases.")
     parser.add_argument("--claude-model", default=_DEFAULT_MODEL["claude"])
     parser.add_argument("--codex-model", default=_DEFAULT_MODEL["codex"])
+    parser.add_argument("--gemini-model", default=_DEFAULT_MODEL["gemini"])
     parser.add_argument("--selfcheck", action="store_true", help="Run offline checks and exit.")
     parser.add_argument(
         "--scratch-dir",
@@ -354,7 +433,11 @@ def main() -> int:
     unknown = [item for item in agent_ids if item not in AGENT_RUNNERS]
     if unknown:
         raise SystemExit(f"unknown agent(s): {unknown}. Choose from {sorted(AGENT_RUNNERS)}.")
-    models = {"claude": args.claude_model, "codex": args.codex_model}
+    models = {
+        "claude": args.claude_model,
+        "codex": args.codex_model,
+        "gemini": args.gemini_model,
+    }
     return run(
         cases_path=args.cases,
         output_dir=args.output,
