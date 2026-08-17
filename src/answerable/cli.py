@@ -151,6 +151,7 @@ def _benchmark(args: argparse.Namespace, *, json_output: bool) -> tuple[int, dic
         print(f"Pairs: {report.total_pairs}")
         print(f"Action accuracy: {report.action_accuracy:.1%}")
         print(f"Unsafe KEEP rate: {report.unsafe_keep_rate:.1%}")
+        print(f"Overreaction rate: {report.overreaction_rate:.1%}")
         print(f"QUALIFY recall: {report.qualify_recall:.1%}")
         print(f"RETRACT recall: {report.retract_recall:.1%}")
         print(f"REVERSE recall: {report.reverse_recall:.1%}")
