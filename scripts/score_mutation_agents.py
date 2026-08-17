@@ -43,6 +43,7 @@ def main() -> int:
                 "agent_id": item.agent_id,
                 "accuracy": item.accuracy,
                 "unsafe_keep_rate": item.unsafe_keep_rate,
+                "overreaction_rate": item.overreaction_rate,
                 "consistency": item.consistency,
             }
             for item in report.agents
