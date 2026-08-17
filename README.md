@@ -4,49 +4,66 @@
 
 ### Evidence before answers.
 
-**A deterministic analytical-validity engine that decides what your data can—and cannot—justify.**
+**Deterministic validity testing for analytics and AI conclusions.**
 
-[Quickstart](#quickstart) · [What ships in v010](#what-ships-in-v010) · [Architecture](#architecture) · [Contributing](CONTRIBUTING.md)
+Your code has tests. Your data has tests. **Your conclusions should too.**
+
+[![CI](https://github.com/Jairogelpi/answerable_data/actions/workflows/ci.yml/badge.svg)](https://github.com/Jairogelpi/answerable_data/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Jairogelpi/answerable_data/actions/workflows/codeql.yml/badge.svg)](https://github.com/Jairogelpi/answerable_data/actions/workflows/codeql.yml)
+![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue)
+![License](https://img.shields.io/badge/license-Apache--2.0-green)
+
+[60-second demo](#60-second-demo) · [Install](#install) · [Golden cases](#golden-cases) · [Evidence Warrants](#evidence-warrants) · [Architecture](#architecture)
 
 </div>
 
-> [!NOTE]
-> **Technical preview.** The validity core, schemas, execution safeguards, evidence model, warrants, benchmark gate, Python API and interface contracts are executable, and `answerable assess` runs one dataset and one question end to end to a signed Evidence Warrant. The web layer and the remaining CLI commands are still thin contract surfaces, not a finished end-user application.
+> [!IMPORTANT]
+> **Correct arithmetic does not guarantee a justified conclusion.** Answerable checks whether the available evidence supports the claim before allowing the claim to pass.
 
-## Why this exists
+![Answerable terminal demo](docs/demo.svg)
 
-Analytics software optimizes for producing an answer. Answerable optimizes for knowing whether an answer is defensible.
+## 60-second demo
 
-A calculation can be correct while the conclusion is wrong: a retention lift without mature cohorts, a causal claim without a comparison group, a forecast with target leakage, or a margin metric after a many-to-many join. Answerable records those limits explicitly and fails closed when required evidence is missing.
+Install the package, then run one command:
 
-> **The model may interpret. Tools measure. Rules verify. Evidence decides.**
+```bash
+answerable demo
+```
 
-## What ships in v0.1.0
+The default case contains a real observed retention difference, but exposed and unexposed customers have no comparable covariate overlap. A naive analysis can calculate the difference; Answerable refuses the causal attribution.
 
-- versioned domain models and 21 public JSON Schemas;
-- deterministic lifecycle, idempotency and SQLite persistence;
-- CSV, TSV, JSONL and Parquet ingestion contracts with hashing and bounded reads;
-- grain, join-cardinality and metric-semantic checks;
-- read-only DuckDB execution and guarded Python execution;
-- missingness, temporal-validity, experiment and statistical checks;
-- causal, predictive, diagnostic and prescriptive contracts;
-- evidence graphs, deterministic verdict precedence and claim linting;
-- immutable, verifiable Evidence Warrants;
-- Python, CLI, API, MCP and accessible HTML contract surfaces;
-- SQLite, DuckDB and PostgreSQL-compatible read-only connectors;
-- multi-tenant governance primitives, audit and retention controls;
-- AnswerableBench release gate, threat model and operational runbooks.
+```text
+Answerable demo
+Case: Causal attribution trap
+Question: Did campaign exposure increase 90-day retention?
+Trap: The observed difference is real, but treatment has zero covariate overlap.
 
-The release is backed by **145 tests**, **96% branch-aware coverage**, strict mypy, Ruff, schema validation, requirement traceability, clean-wheel installation, CI and CodeQL.
+Verdict: FUNDAMENTALLY_UNIDENTIFIABLE
+Blockers:
+  x positivity_violation: No covariate stratum contains both exposed and unexposed entities.
 
-## Quickstart
+Supported claims:
+  + Exposed customers had higher observed 90-day retention than unexposed customers.
 
-### Requirements
+Unsupported claims:
+  - The campaign caused higher 90-day retention.
+```
 
-- Python 3.11 or 3.12
-- Git
+That distinction is the product: **a number can be correct while the conclusion is wrong.**
 
-### Install from source
+## Install
+
+### PyPI
+
+The v0.2 release workflow publishes tagged distributions through PyPI Trusted Publishing:
+
+```bash
+python -m pip install answerable-data
+answerable doctor
+answerable demo
+```
+
+Until the first v0.2 tag is published, install the current source checkout:
 
 ```bash
 git clone https://github.com/Jairogelpi/answerable_data.git
@@ -55,95 +72,84 @@ python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 python -m pip install --upgrade pip
 python -m pip install -e .
+answerable doctor
+answerable demo
 ```
 
-Confirm the installation:
+`answerable doctor` verifies the runtime and core dependencies. A release is also tested by installing the built wheel into a clean virtual environment and running the demo from that wheel.
 
-```bash
-answerable doctor --json
-python -c "import answerable; print(answerable.__version__)"
-```
+## Golden cases
 
-Expected version:
+Answerable ships three deliberately adversarial first-run cases:
 
-```text
-0.1.0
-```
+| Demo | Broken assumption | Expected signal |
+| --- | --- | --- |
+| `answerable demo causal` | Treatment has zero covariate overlap | `positivity_violation` |
+| `answerable demo grain` | One customer appears twice at a declared one-row-per-customer grain | `duplicate_entities` |
+| `answerable demo maturity` | Recent cohorts have not completed the 90-day outcome window | `immature_cohort` |
 
-### Use the deterministic verdict engine
+The same cases are readable as normal repository fixtures under [`examples/`](examples/). They are not hand-authored verdicts: the engine executes checks against the data and question contract.
 
-```python
-from answerable import assess
-from answerable.evidence.verdict import FindingInput, Repairability
-
-result = assess(
-    (
-        FindingInput(
-            finding_id="no-control",
-            category="identification",
-            severity="blocker",
-            message="No comparable untreated population exists.",
-            repairability=Repairability.RECOVERABLE,
-        ),
-    )
-)
-
-print(result.verdict)
-print(result.decisive_findings[0].message)
-```
-
-This returns `FUNDAMENTALLY_UNIDENTIFIABLE`; it does not invent a causal estimate.
-
-### Run a dataset and a question to an Evidence Warrant
+## Assess your own data
 
 ```bash
 answerable assess \
-  --data examples/campaign_retention/customers.csv \
-  --question examples/campaign_retention/question.yaml \
-  --output runs/campaign_retention
+  --data customers.csv \
+  --question question.yaml \
+  --output runs/my_assessment
 ```
+
+An assessment executes this chain:
 
 ```text
-Assessment: asm_03188b31a996d497
-Verdict: FUNDAMENTALLY_UNIDENTIFIABLE
-Blockers: 3
-Allowed claims: 1
-Forbidden claims: 2
+question contract
+      +
+immutable data fingerprint
+      ↓
+deterministic checks
+      ↓
+evidence graph
+      ↓
+verdict
+      ↓
+repair plan
+      ↓
+Evidence Warrant
 ```
 
-The run writes `question_contract.json`, `data_inventory.json`, `check_plan.json`, `findings.json`, `evidence_graph.json`, `verdict.json`, `repair_plan.json`, `warrant.json` and a plain-language `warrant.md` into the output directory. Exit code `0` means answerable, `2` means blocked, `3` means an invalid warrant.
+The run emits machine-readable artifacts plus a human-readable warrant, including `question_contract.json`, `data_inventory.json`, `check_plan.json`, `findings.json`, `evidence_graph.json`, `verdict.json`, `repair_plan.json`, `warrant.json` and `warrant.md`.
 
-Every claim in the warrant is derived from checks executed against the data; no findings are supplied by hand. Verify the warrant, then tamper with it and verify again:
+Exit codes are intentional: `0` means the requested conclusion is cleanly answerable, `2` means the analytical request is blocked, and `3` means warrant verification failed.
+
+## Evidence Warrants
+
+A warrant records what the data supports, what it does not support, the decisive evidence, assumptions, repair actions and provenance needed to reproduce the assessment.
+
+Verify one:
 
 ```bash
-answerable --json warrant verify --warrant runs/campaign_retention/warrant.json
+answerable --json warrant verify --warrant runs/my_assessment/warrant.json
 ```
 
-See [`examples/campaign_retention`](examples/campaign_retention/README.md) for the analytical trap the case demonstrates.
+If the warrant is modified after issuance, verification fails.
 
-### Explore the remaining CLI contract
+## What Answerable is testing
 
-```bash
-answerable --help
-answerable --json doctor
-answerable --json benchmark
-```
+Answerable is not a generic chat-with-data system and does not optimize for always returning an answer. It is a validity layer between evidence and conclusions.
 
-The other commands still expose stable command and machine-readable response contracts only.
+Examples of failures it is designed to surface include:
 
-## Core guarantee
+- causal attribution without an identifiable comparison;
+- incomplete outcome windows and right censoring;
+- duplicated or ambiguous units of analysis;
+- target or temporal leakage;
+- unsafe joins and incompatible grain;
+- underpowered or invalid experiments;
+- unsupported causal, predictive, diagnostic or prescriptive language.
 
-Every material claim must have a directed path to immutable evidence. Deterministic blockers dominate model output, missing artifacts prevent an `ANSWERABLE` verdict, and database connectors reject mutation.
+The core rule is:
 
-```mermaid
-flowchart LR
-  Q["Question contract"] --> P["Check plan"]
-  D["Read-only data"] --> X["Deterministic execution"]
-  P --> X
-  X --> G["Evidence graph"]
-  G --> V["Verdict"]
-  V --> W["Evidence Warrant"]
-```
+> **The model may interpret. Tools measure. Rules verify. Evidence decides.**
 
 ## Verdicts
 
@@ -158,12 +164,28 @@ flowchart LR
 | `DATA_INTEGRITY_FAILURE` | Data defects invalidate the result |
 | `ASSESSMENT_INCOMPLETE` | Mandatory execution evidence is absent |
 
-## Architecture
+## Engineering evidence
 
-The repository is specification-driven. `docs/PRODUCT_SPEC.md` is normative; `requirements/traceability.yaml` maps verified requirements to implementation and tests.
+The project is specification-driven and fail-closed. The verification suite enforces branch-aware coverage of at least 95%, strict mypy, Ruff, public-schema validation, requirement traceability, clean package build/install and CodeQL.
+
+The current engine includes:
+
+- content-hashed CSV, TSV, JSONL and Parquet intake;
+- grain, join-cardinality and metric-semantic checks;
+- temporal, missingness, experiment and statistical validity checks;
+- causal, predictive, diagnostic and prescriptive contracts;
+- guarded DuckDB and restricted Python execution;
+- typed evidence graphs and deterministic verdict precedence;
+- immutable, verifiable Evidence Warrants;
+- SQLite, DuckDB and PostgreSQL-compatible read-only connectors;
+- audit, retention and multi-tenant governance primitives;
+- API, MCP and HTML contract surfaces.
+
+## Architecture
 
 ```text
 src/answerable/
+├── application/   end-to-end assessment orchestration
 ├── framing/       question contracts
 ├── ingestion/     immutable file intake
 ├── analysis/      grain, joins and metrics
@@ -178,6 +200,8 @@ src/answerable/
 └── interfaces/    API and MCP contracts
 ```
 
+`docs/PRODUCT_SPEC.md` is normative. `requirements/traceability.yaml` maps verified requirements to implementation and tests.
+
 ## Development
 
 ```bash
@@ -188,26 +212,16 @@ make build
 
 A contribution is not complete until formatting, linting, strict typing, tests, coverage, schemas and traceability pass. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Security and data boundary
+## Current boundary
 
-Answerable is pre-release software. Do not use it with production-sensitive datasets without an independent review. Connectors are designed for read-only access; no raw rows should be sent to a model by default. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+Answerable is still pre-1.0 software. The end-to-end assessment path, golden demos, validity core, warrants and verification path are executable. Some web/API/MCP surfaces remain contracts rather than a finished hosted product. Do not use production-sensitive datasets without an independent security and methodological review.
 
-## Roadmap and support
-
-See [ROADMAP.md](ROADMAP.md) for the intentionally narrow next milestones and [SUPPORT.md](SUPPORT.md) for support boundaries.
-
-## Citation
-
-Research and portfolio use can cite this repository using [CITATION.cff](CITATION.cff).
-
-## License
-
-Apache License 2.0. See [LICENSE](LICENSE).
+See [ROADMAP.md](ROADMAP.md), [SECURITY.md](SECURITY.md), [SUPPORT.md](SUPPORT.md) and [CITATION.cff](CITATION.cff).
 
 ---
 
 <div align="center">
 
-**A number can be correct while the conclusion is wrong.**
+**Data can produce an answer. Answerable asks whether it can support the conclusion.**
 
 </div>

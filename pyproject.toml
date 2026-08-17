@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "answerable-data"
-version = "0.1.0"
-description = "Deterministic analytical validity engine for deciding what data can justify."
+version = "0.2.0"
+description = "Deterministic validity testing for analytics and AI conclusions."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [{ name = "Jairo Gelpi Moreno" }]
-keywords = ["analytics", "data-quality", "causal-inference", "evidence", "ai-safety"]
+keywords = ["analytics", "data-quality", "causal-inference", "evidence", "ai-safety", "data-validation", "llm"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -43,6 +43,7 @@ dev = [
   "pytest>=8.3",
   "pytest-cov>=6.0",
   "ruff>=0.11",
+  "types-PyYAML>=6.0.12",
 ]
 
 [tool.hatch.build.targets.wheel]
