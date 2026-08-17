@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 import unittest
+from contextlib import closing
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -26,19 +27,18 @@ class ConcreteConnectorTests(unittest.TestCase):
             connection.commit()
             connection.close()
 
-            connector = SQLiteConnector(path)
-            self.addCleanup(connector.close)
-            self.assertTrue(connector.test())
-            self.assertEqual(connector.catalog(), ("metrics",))
-            self.assertEqual(
-                connector.query("SELECT * FROM metrics ORDER BY name", max_rows=2),
-                (
-                    {"name": "orders", "value": 2},
-                    {"name": "revenue", "value": 10},
-                ),
-            )
-            with self.assertRaises(PermissionError):
-                connector.query("DELETE FROM metrics", max_rows=1)
+            with closing(SQLiteConnector(path)) as connector:
+                self.assertTrue(connector.test())
+                self.assertEqual(connector.catalog(), ("metrics",))
+                self.assertEqual(
+                    connector.query("SELECT * FROM metrics ORDER BY name", max_rows=2),
+                    (
+                        {"name": "orders", "value": 2},
+                        {"name": "revenue", "value": 10},
+                    ),
+                )
+                with self.assertRaises(PermissionError):
+                    connector.query("DELETE FROM metrics", max_rows=1)
 
     def test_sqlite_connector_enforces_result_bound(self) -> None:
         with TemporaryDirectory() as directory:
@@ -48,12 +48,11 @@ class ConcreteConnectorTests(unittest.TestCase):
             connection.executemany("INSERT INTO values_table VALUES (?)", ((1,), (2,)))
             connection.commit()
             connection.close()
-            connector = SQLiteConnector(path)
-            self.addCleanup(connector.close)
-            with self.assertRaisesRegex(ValueError, "row limit"):
-                connector.query("SELECT * FROM values_table", max_rows=1)
-            with self.assertRaisesRegex(ValueError, "positive"):
-                connector.query("SELECT * FROM values_table", max_rows=0)
+            with closing(SQLiteConnector(path)) as connector:
+                with self.assertRaisesRegex(ValueError, "row limit"):
+                    connector.query("SELECT * FROM values_table", max_rows=1)
+                with self.assertRaisesRegex(ValueError, "positive"):
+                    connector.query("SELECT * FROM values_table", max_rows=0)
 
     def test_sqlite_connector_rejects_missing_database(self) -> None:
         with (
