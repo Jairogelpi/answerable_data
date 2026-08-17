@@ -1,4 +1,4 @@
-name: Create v0.3.0 tag
+name: Bootstrap v0.3.0 release
 
 on:
   push:
@@ -7,23 +7,33 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
-  tag:
-    name: Tag v0.3.0
+  bootstrap:
+    name: Bootstrap v0.3.0
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Create release tag once
+      - name: Ensure release tag exists
         env:
           TAG: v0.3.0
         run: |
-          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
-            echo "${TAG} already exists; nothing to do."
+          if ! git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            git tag "${TAG}" "${GITHUB_SHA}"
+            git push origin "${TAG}"
+          fi
+
+      - name: Dispatch canonical release workflow once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v0.3.0
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "$TAG is already published; nothing to do."
             exit 0
           fi
-          git tag "${TAG}" "${GITHUB_SHA}"
-          git push origin "${TAG}"
+          gh workflow run release.yml --ref main -f tag="$TAG"
