@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="392" viewBox="0 0 640 392" role="img" aria-label="Answerable vs LLM agents on AnswerableBench EMT">
+  <title>AnswerableBench EMT — Answerable vs LLM agents</title>
+  <style>:root { --bg:#ffffff; --card:#f6f8fa; --border:#d0d7de; --fg:#1f2328;
+          --muted:#57606a; --accent:#1a7f37; --warn:#9a6700; --track:#d0d7de; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d1117; --card:#161b22; --border:#30363d; --fg:#e6edf3;
+            --muted:#8b949e; --accent:#3fb950; --warn:#d29922; --track:#30363d; }
+  }
+  .bg { fill: var(--bg); }
+  .card { fill: var(--card); stroke: var(--border); }
+  .title { fill: var(--fg); font: 700 20px system-ui, sans-serif; }
+  .subtitle { fill: var(--muted); font: 400 13px system-ui, sans-serif; }
+  .section { fill: var(--fg); font: 600 13px system-ui, sans-serif; }
+  .bar-label { fill: var(--fg); font: 600 13px system-ui, sans-serif; }
+  .bar-pct { fill: var(--muted); font: 400 12px system-ui, sans-serif; }
+  .track { fill: var(--track); }
+  .fill-ok { fill: var(--accent); }
+  .fill-warn { fill: var(--warn); }
+  .footer { fill: var(--muted); font: 400 11px system-ui, sans-serif; }</style>
+  <rect class="bg" width="640" height="392"/>
+  <rect class="card" x="1" y="1" width="638" height="390" rx="10"/>
+  <text x="24" y="40" class="title">ANSWERABLE vs LLM AGENTS</text>
+  <text x="24" y="60" class="subtitle">Same 48 frozen cases, same scorer, real CLI/API calls — not simulated</text>
+  <line x1="24" y1="78" x2="616" y2="78" stroke="var(--border)"/>
+  <text x="24" y="112" class="section">Overall accuracy</text><text x="24" y="144" class="bar-label">answerable</text><rect x="140" y="130" width="380" height="16" rx="3" class="track"/><rect x="140" y="130" width="380" height="16" rx="3" class="fill-ok"/><text x="530" y="143" class="bar-pct">100%</text><text x="24" y="174" class="bar-label">codex</text><rect x="140" y="160" width="380" height="16" rx="3" class="track"/><rect x="140" y="160" width="231" height="16" rx="3" class="fill-ok"/><text x="530" y="173" class="bar-pct">61%</text><text x="24" y="204" class="bar-label">claude</text><rect x="140" y="190" width="380" height="16" rx="3" class="track"/><rect x="140" y="190" width="300" height="16" rx="3" class="fill-ok"/><text x="530" y="203" class="bar-pct">79%</text><text x="24" y="234" class="section">RETRACT rate on evidence invalidation (should be 100%)</text><text x="24" y="266" class="bar-label">answerable</text><rect x="140" y="252" width="380" height="16" rx="3" class="track"/><rect x="140" y="252" width="380" height="16" rx="3" class="fill-ok"/><text x="530" y="265" class="bar-pct">100%</text><text x="24" y="296" class="bar-label">codex</text><rect x="140" y="282" width="380" height="16" rx="3" class="track"/><rect x="140" y="282" width="115" height="16" rx="3" class="fill-warn"/><text x="530" y="295" class="bar-pct">30%</text><text x="24" y="326" class="bar-label">claude</text><rect x="140" y="312" width="380" height="16" rx="3" class="track"/><rect x="140" y="312" width="61" height="16" rx="3" class="fill-warn"/><text x="530" y="325" class="bar-pct">16%</text>
+  <text x="24" y="374" class="footer">emt-v1 · full run: benchmarks/epistemic_mutations/results/</text>
+</svg>

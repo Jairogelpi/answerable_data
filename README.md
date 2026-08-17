@@ -156,17 +156,26 @@ For external model comparison, the evaluator requires a complete **3 agents × 2
 
 ### Answerable vs real LLM agents
 
-Run through actual `claude` and `codex` CLI calls against the frozen `emt-v1` case set — not simulated, 192 real decisions, full prompts and responses in [`benchmarks/epistemic_mutations/results/2026-08-17-claude-codex/`](benchmarks/epistemic_mutations/results/2026-08-17-claude-codex/):
+Run through actual `claude` and `codex` CLI calls against the frozen `emt-v2` case set — not simulated, 448 real decisions across all 7 failure classes, full prompts and responses in [`benchmarks/epistemic_mutations/results/2026-08-17-emt-v2-claude-codex/`](benchmarks/epistemic_mutations/results/2026-08-17-emt-v2-claude-codex/):
 
-<img src="benchmarks/epistemic_mutations/results/2026-08-17-claude-codex/comparison.svg" alt="Answerable scores 100% accuracy and 100% RETRACT rate; Codex and Claude trail on both, especially RETRACT" width="640">
+<img src="benchmarks/epistemic_mutations/results/2026-08-17-emt-v2-claude-codex/comparison.svg" alt="Answerable scores 100% accuracy and 100% RETRACT rate; Claude and Codex trail on both, especially RETRACT" width="640">
 
-| | Answerable | Codex | Claude |
+| | Answerable | Claude | Codex |
 | --- | --- | --- | --- |
-| Overall accuracy | **100%** | 83.3% | 77.1% |
+| Overall accuracy | **100%** | 79.0% | 60.7% |
 | Unsafe KEEP | 0% | 0% | 0% |
-| RETRACT correct on evidence invalidation (n=24) | **24/24** | 8/24 | 2/24 |
 
-Both models are safe in the sense that matters most (0% unsafe `KEEP` — neither ever keeps a conclusion its own evidence no longer supports), but when the evidence is invalidated, both systematically answer `QUALIFY` instead of `RETRACT`: 16/16 of Codex's errors and 22/22 of Claude's land on that one wrong answer, not spread across the other options. A one-sided exact binomial test against a uniform-among-wrong-answers null puts the probability of that concentration by chance at 2.3 × 10⁻⁸ (Codex) and 3.2 × 10⁻¹¹ (Claude) — see the [full write-up](benchmarks/epistemic_mutations/results/2026-08-17-claude-codex/README.md) for the exact test, sample-size caveats (n=24 per model, 2 models — Gemini's free tier couldn't sustain a full run), and how to reproduce it. The methodology, threats to validity, and related work are written up in [`docs/paper/paper.md`](docs/paper/paper.md).
+Both models are safe by the strictest measure (0% unsafe `KEEP` across all 112 pairs), but RETRACT accuracy on `evidence_invalidation` is not uniform across the 7 mechanisms — pooling into one number hides the actual finding:
+
+| Failure class | Answerable | Claude | Codex |
+| --- | --- | --- | --- |
+| `predictive` (feature/prediction-time leakage) | 8/8 | **8/8** | **8/8** |
+| `data_model` (grain duplication) | 8/8 | 1/8 | **8/8** |
+| `causal`, `temporal`, `statistical`, `metric_semantics`, `missingness` | 8/8 each | 0–1/8 each | 0–1/8 each |
+
+**Both models retract perfectly on data leakage — arguably the most heavily taught data-integrity failure in ML — and almost never on the five statistical/causal mechanisms**, which are comparatively under-taught and easier to soften into `QUALIFY` ("probably still there, just weaker") than to withdraw outright. A one-sided exact binomial test on the pooled wrong answers puts `QUALIFY`'s share at 47/47 for Claude (p = 3.76 × 10⁻²³) and 39/39 for Codex (p = 2.47 × 10⁻¹⁹) — not remotely explainable by chance. See the [full write-up](benchmarks/epistemic_mutations/results/2026-08-17-emt-v2-claude-codex/README.md) for sample-size caveats and how to reproduce it, and [`docs/paper/paper.md`](docs/paper/paper.md) for methodology and threats to validity. The earlier [3-class run](benchmarks/epistemic_mutations/results/2026-08-17-claude-codex/) stays published against `emt-v1`, unedited, per the freeze rule.
+
+Note what this does *not* show: it measures the LLM's own judgment with no access to Answerable. Whether an agent given `assess_answerability` as a callable tool defers to it and gets these right is a different, separately-run [test below](#agent--tool-does-giving-claude-and-codex-the-tool-fix-it).
 
 ## Using Answerable with Claude Code and Codex
 

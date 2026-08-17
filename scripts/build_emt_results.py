@@ -1,22 +1,27 @@
 """Build the final AnswerableBench EMT comparison: Answerable vs LLM agents.
 
 Answerable enters the same comparison as a "4th agent": its own decisions on
-the frozen emt-v1 cases, produced by actually running run_mutation_benchmark
-(the deterministic engine) rather than citing its release-gate score. Two
-repetitions are recorded for parity with the LLM protocol, even though a
-deterministic engine's second run is identical by construction -- that
-determinism is the point, not a shortcut.
+whatever benchmark_pairs() currently returns, produced by actually running
+run_mutation_benchmark (the deterministic engine) rather than citing its
+release-gate score. Two repetitions are recorded for parity with the LLM
+protocol, even though a deterministic engine's second run is identical by
+construction -- that determinism is the point, not a shortcut.
+
+--oracle MUST match the release the --llm-decisions pair_ids were scored
+against (emt-v1's 48 pair_ids differ from emt-v2's 112) -- a mismatch fails
+with a clear KeyError, not a silently wrong score, but pass the right one.
 
 The interesting statistical claim isn't just "the model didn't retract" --
 it's that the wrong answers aren't spread randomly across the other three
 actions. A binomial test against a uniform-among-wrong-actions null (p=1/3)
 quantifies that directly, with no external stats dependency: for the sample
-sizes here (n<=24), math.comb computes the exact tail probability.
+sizes here (n<=24 per class), math.comb computes the exact tail probability.
 
 Usage:
     python scripts/build_emt_results.py \\
-        --llm-decisions runs/emt-full3/decisions.jsonl runs/emt-gemini-full/decisions.jsonl \\
-        --output runs/emt-results
+        --llm-decisions runs/emt-v2-agents/decisions.jsonl \\
+        --oracle benchmarks/releases/emt-v2/oracle.json \\
+        --output runs/emt-v2-results
 """
 
 from __future__ import annotations
@@ -29,15 +34,14 @@ from pathlib import Path
 from answerable.mutation_benchmark import (
     AgentDecision,
     MutationAction,
+    benchmark_pairs,
     evaluate_agent_matrix,
     run_mutation_benchmark,
 )
 
-_ORACLE_PATH = Path("benchmarks/releases/emt-v1/oracle.json")
-
 
 def answerable_decisions() -> tuple[AgentDecision, ...]:
-    """Answerable's own answers on emt-v1, from the real deterministic engine."""
+    """Answerable's own answers on the current benchmark_pairs(), from the real engine."""
     report = run_mutation_benchmark(Path("runs/_answerable_as_agent"))
     decisions = []
     for observation in report.observations:
@@ -108,13 +112,44 @@ def _confusion_on_evidence_invalidation(
     }
 
 
+def _retract_by_failure_class(
+    agent_id: str, decisions: list[AgentDecision], oracle: dict[str, str]
+) -> dict[str, dict[str, object]]:
+    """RETRACT accuracy on evidence_invalidation, broken out per failure class.
+
+    A single pooled RETRACT rate across every class can hide a real,
+    interesting split -- e.g. an agent that retracts perfectly on one
+    mechanism (say, prediction leakage) but almost never on the others.
+    Pooling would average that into "medium accuracy" and lose the finding.
+    """
+    class_by_pair = {pair.pair_id: pair.failure_class.value for pair in benchmark_pairs()}
+    by_class: dict[str, list[AgentDecision]] = {}
+    for decision in decisions:
+        if decision.agent_id != agent_id or "evidence_invalidation" not in decision.pair_id:
+            continue
+        by_class.setdefault(class_by_pair[decision.pair_id], []).append(decision)
+    return {
+        failure_class: {
+            "n": len(rows),
+            "retract_correct": sum(1 for d in rows if oracle[d.pair_id] == d.action.value),
+        }
+        for failure_class, rows in sorted(by_class.items())
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build the Answerable vs LLM EMT comparison.")
     parser.add_argument("--llm-decisions", type=Path, nargs="+", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--oracle",
+        type=Path,
+        default=Path("benchmarks/releases/emt-v2/oracle.json"),
+        help="Must match the release the --llm-decisions pair_ids were scored against.",
+    )
     args = parser.parse_args()
 
-    oracle = json.loads(_ORACLE_PATH.read_text(encoding="utf-8"))["expected_action"]
+    oracle = json.loads(args.oracle.read_text(encoding="utf-8"))["expected_action"]
     decisions = _load_decisions(args.llm_decisions) + list(answerable_decisions())
     # Keep the newest decision per (agent_id, repetition, pair_id): a rerun
     # (e.g. gemini after the quota fix) legitimately overwrites an older,
@@ -143,6 +178,9 @@ def main() -> int:
     results["evidence_invalidation_analysis"] = [
         _confusion_on_evidence_invalidation(agent_id, decisions, oracle) for agent_id in agent_ids
     ]
+    results["retract_by_failure_class"] = {
+        agent_id: _retract_by_failure_class(agent_id, decisions, oracle) for agent_id in agent_ids
+    }
 
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "results.json").write_text(
@@ -168,6 +206,12 @@ def main() -> int:
             f"  {row['agent_id']:10s} n={row['n']:2d} retract={row['retract_correct']}/{row['n']} "
             f"dominant_wrong={dominant} p={row['p_value_dominant_direction']}"
         )
+    print()
+    print("RETRACT by failure class (a pooled rate can hide this split):")
+    for agent_id, by_class in results["retract_by_failure_class"].items():  # type: ignore[union-attr]
+        print(f"  {agent_id}:")
+        for failure_class, row in by_class.items():
+            print(f"    {failure_class:20s} {row['retract_correct']}/{row['n']}")
     print(f"\nwrote {args.output / 'results.json'}")
     return 0
 

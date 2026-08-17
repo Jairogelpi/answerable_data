@@ -11,6 +11,7 @@ from answerable.mutation_benchmark import (
     benchmark_scenarios,
     evaluate_agent_matrix,
     expected_blocker,
+    materialize_case,
     run_mutation_benchmark,
 )
 
@@ -64,6 +65,26 @@ def test_mutation_benchmark_executes_runner_and_passes_release_gate(tmp_path: Pa
     # Each failure class must be blocked by its own mechanism, not a shared one.
     for item in invalidated:
         assert expected_blocker(item.pair.failure_class) in item.blockers
+
+
+def test_materialize_case_writes_real_files_the_engine_accepts(tmp_path: Path) -> None:
+    from answerable.application.assessment_runner import AssessmentRunner
+    from answerable.application.spec_loader import load_spec
+
+    scenario = benchmark_scenarios()[0]
+    data_path = materialize_case(tmp_path, scenario, MutationFamily.EVIDENCE_INVALIDATION)
+
+    assert data_path.is_file()
+    question_path = data_path.parent / "question.yaml"
+    assert question_path.is_file()
+    # Not just files on disk -- the real engine accepts and blocks them,
+    # same as run_mutation_benchmark's own internal case generation.
+    run = AssessmentRunner().run(
+        data_sources=(data_path,),
+        spec=load_spec(question_path),
+        output_directory=tmp_path / "out",
+    )
+    assert expected_blocker(scenario.failure_class) in {item.finding_id for item in run.blockers}
 
 
 def test_mutation_benchmark_is_reproducible_across_directories(tmp_path: Path) -> None:

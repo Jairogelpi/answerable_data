@@ -1,0 +1,158 @@
+{
+  "agents": {
+    "answerable": {
+      "accuracy": 1.0,
+      "consistency": 1.0,
+      "overreaction_rate": 0.0,
+      "unsafe_keep_rate": 0.0
+    },
+    "claude": {
+      "accuracy": 0.7901785714285714,
+      "consistency": 0.9910714285714286,
+      "overreaction_rate": 0.0,
+      "unsafe_keep_rate": 0.0
+    },
+    "codex": {
+      "accuracy": 0.6071428571428571,
+      "consistency": 0.9642857142857143,
+      "overreaction_rate": 0.0,
+      "unsafe_keep_rate": 0.0
+    }
+  },
+  "decision_counts": {
+    "answerable": 224,
+    "claude": 224,
+    "codex": 224
+  },
+  "evidence_invalidation_analysis": [
+    {
+      "agent_id": "answerable",
+      "dominant_wrong_action": null,
+      "dominant_wrong_count": 0,
+      "n": 56,
+      "p_value_dominant_direction": null,
+      "retract_correct": 56,
+      "retract_rate": 1.0,
+      "wrong_by_action": {},
+      "wrong_total": 0
+    },
+    {
+      "agent_id": "claude",
+      "dominant_wrong_action": "QUALIFY",
+      "dominant_wrong_count": 47,
+      "n": 56,
+      "p_value_dominant_direction": 3.7609800365660436e-23,
+      "retract_correct": 9,
+      "retract_rate": 0.16071428571428573,
+      "wrong_by_action": {
+        "QUALIFY": 47
+      },
+      "wrong_total": 47
+    },
+    {
+      "agent_id": "codex",
+      "dominant_wrong_action": "QUALIFY",
+      "dominant_wrong_count": 39,
+      "n": 56,
+      "p_value_dominant_direction": 2.4675790019909823e-19,
+      "retract_correct": 17,
+      "retract_rate": 0.30357142857142855,
+      "wrong_by_action": {
+        "QUALIFY": 39
+      },
+      "wrong_total": 39
+    }
+  ],
+  "retract_by_failure_class": {
+    "answerable": {
+      "causal": {
+        "n": 8,
+        "retract_correct": 8
+      },
+      "data_model": {
+        "n": 8,
+        "retract_correct": 8
+      },
+      "metric_semantics": {
+        "n": 8,
+        "retract_correct": 8
+      },
+      "missingness": {
+        "n": 8,
+        "retract_correct": 8
+      },
+      "predictive": {
+        "n": 8,
+        "retract_correct": 8
+      },
+      "statistical": {
+        "n": 8,
+        "retract_correct": 8
+      },
+      "temporal": {
+        "n": 8,
+        "retract_correct": 8
+      }
+    },
+    "claude": {
+      "causal": {
+        "n": 8,
+        "retract_correct": 0
+      },
+      "data_model": {
+        "n": 8,
+        "retract_correct": 1
+      },
+      "metric_semantics": {
+        "n": 8,
+        "retract_correct": 0
+      },
+      "missingness": {
+        "n": 8,
+        "retract_correct": 0
+      },
+      "predictive": {
+        "n": 8,
+        "retract_correct": 8
+      },
+      "statistical": {
+        "n": 8,
+        "retract_correct": 0
+      },
+      "temporal": {
+        "n": 8,
+        "retract_correct": 0
+      }
+    },
+    "codex": {
+      "causal": {
+        "n": 8,
+        "retract_correct": 1
+      },
+      "data_model": {
+        "n": 8,
+        "retract_correct": 8
+      },
+      "metric_semantics": {
+        "n": 8,
+        "retract_correct": 0
+      },
+      "missingness": {
+        "n": 8,
+        "retract_correct": 0
+      },
+      "predictive": {
+        "n": 8,
+        "retract_correct": 8
+      },
+      "statistical": {
+        "n": 8,
+        "retract_correct": 0
+      },
+      "temporal": {
+        "n": 8,
+        "retract_correct": 0
+      }
+    }
+  }
+}

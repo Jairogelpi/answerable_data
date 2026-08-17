@@ -482,18 +482,29 @@ def blind_question(failure_class: FailureClass) -> tuple[str, str]:
     return question, f"The exposure increased observed {definition.lower()}."
 
 
+def materialize_case(directory: Path, scenario: Scenario, family: MutationFamily | None) -> Path:
+    """Write the real customers.csv + question.yaml for one case to `directory`.
+
+    Public so a real CLI/agent-driven experiment can point `answerable
+    assess` (or an agent with shell access) at actual files -- the same
+    ones the deterministic release gate runs, not a summary of them.
+    Returns the data file's path; the question file sits alongside it.
+    """
+    directory.mkdir(parents=True, exist_ok=True)
+    data_path = directory / "customers.csv"
+    question_path = directory / "question.yaml"
+    data_path.write_text(_rows(scenario, family), encoding="utf-8")
+    question_path.write_text(_question_yaml(scenario), encoding="utf-8")
+    return data_path
+
+
 def _run_case(root: Path, scenario: Scenario, family: MutationFamily | None) -> AssessmentRun:
     label = "baseline" if family is None else family.value
     case_dir = root / scenario.scenario_id / label
-    input_dir = case_dir / "input"
-    input_dir.mkdir(parents=True, exist_ok=True)
-    data_path = input_dir / "customers.csv"
-    question_path = input_dir / "question.yaml"
-    data_path.write_text(_rows(scenario, family), encoding="utf-8")
-    question_path.write_text(_question_yaml(scenario), encoding="utf-8")
+    data_path = materialize_case(case_dir / "input", scenario, family)
     return AssessmentRunner().run(
         data_sources=(data_path,),
-        spec=load_spec(question_path),
+        spec=load_spec(data_path.parent / "question.yaml"),
         output_directory=case_dir,
     )
 
@@ -737,6 +748,7 @@ __all__ = [
     "blind_question",
     "evaluate_agent_matrix",
     "expected_blocker",
+    "materialize_case",
     "report_to_dict",
     "run_mutation_benchmark",
 ]
