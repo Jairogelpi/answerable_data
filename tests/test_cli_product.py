@@ -54,3 +54,32 @@ def test_demo_json_returns_expected_signal(
     assert payload["expected_signal"] == "immature_cohort"
     assert "immature_cohort" in payload["blockers"]
     assert Path(payload["artifacts"]["warrant"]).is_file()
+
+
+def test_mutation_benchmark_human_output_is_release_gating(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code = main(("benchmark", "mutations", "--output", str(tmp_path / "emt")))
+    output = capsys.readouterr().out
+
+    assert code == 0
+    assert "Epistemic Mutation Testing" in output
+    assert "Pairs: 48" in output
+    assert "Action accuracy: 100.0%" in output
+    assert "Unsafe KEEP rate: 0.0%" in output
+    assert "Release gate: PASS" in output
+    assert (tmp_path / "emt" / "mutation_report.json").is_file()
+
+
+def test_mutation_benchmark_json_exposes_reproducibility_hash(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code = main(("--json", "benchmark", "mutations", "--output", str(tmp_path / "emt-json")))
+    payload = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert payload["command"] == "benchmark"
+    assert payload["suite"] == "mutations"
+    assert payload["total_pairs"] == 48
+    assert payload["release_pass"] is True
+    assert len(payload["reproducibility_hash"]) == 64
