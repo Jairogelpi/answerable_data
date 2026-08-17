@@ -67,6 +67,7 @@ def test_mutation_benchmark_human_output_is_release_gating(
     assert "Pairs: 48" in output
     assert "Action accuracy: 100.0%" in output
     assert "Unsafe KEEP rate: 0.0%" in output
+    assert "Overreaction rate: 0.0%" in output
     assert "Release gate: PASS" in output
     assert (tmp_path / "emt" / "mutation_report.json").is_file()
 
@@ -81,5 +82,7 @@ def test_mutation_benchmark_json_exposes_reproducibility_hash(
     assert payload["command"] == "benchmark"
     assert payload["suite"] == "mutations"
     assert payload["total_pairs"] == 48
+    assert payload["unsafe_keep_rate"] == 0.0
+    assert payload["overreaction_rate"] == 0.0
     assert payload["release_pass"] is True
     assert len(payload["reproducibility_hash"]) == 64
