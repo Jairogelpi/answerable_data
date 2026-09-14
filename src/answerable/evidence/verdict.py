@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from answerable.domain.models import Verdict
-from answerable.evidence.claims import ClaimContext, ClaimLinter
+from answerable.evidence.claims import ClaimClass, ClaimContext, ClaimLinter
 
 
 class Repairability(StrEnum):
@@ -46,11 +46,30 @@ class VerdictEngine:
         forbidden: list[str] = []
         linter = ClaimLinter()
         for claim, context in claims:
-            if linter.lint(claim, context):
+            if linter.lint(claim, context) or any(
+                self.blocks_claim(item, context.claim_class) for item in blockers
+            ):
                 forbidden.append(claim)
             else:
                 allowed.append(claim)
         return VerdictResult(verdict, blockers or findings, tuple(allowed), tuple(forbidden))
+
+    @staticmethod
+    def blocks_claim(finding: FindingInput, claim_class: ClaimClass) -> bool:
+        """Scope blockers to claims, independently of their surface wording."""
+        if finding.severity not in {"blocker", "fatal"}:
+            return False
+        if finding.affects_all_claims or finding.category in {
+            "execution_fatal",
+            "schema_fatal",
+            "security_fatal",
+            "data_integrity",
+            "misleading_question",
+        }:
+            return True
+        # A raw observed association may survive a missing causal prerequisite.
+        # It does not establish a population effect, prediction or recommendation.
+        return claim_class not in {ClaimClass.DESCRIPTIVE, ClaimClass.ASSOCIATION}
 
     @staticmethod
     def _precedence(findings: tuple[FindingInput, ...]) -> Verdict:

@@ -22,6 +22,10 @@ def to_dict(value: object) -> Any:
         return value.isoformat()
     if isinstance(value, tuple):
         return [to_dict(item) for item in value]
+    if isinstance(value, frozenset):
+        return sorted(
+            (to_dict(item) for item in value), key=lambda item: json.dumps(item, sort_keys=True)
+        )
     if isinstance(value, list):
         return [to_dict(item) for item in value]
     if isinstance(value, dict):
@@ -65,6 +69,10 @@ def _decode(annotation: object, value: object) -> Any:
         if not isinstance(value, list):
             raise TypeError("tuple value must be an array")
         return tuple(_decode(item_type, item) for item in value)
+    if origin is frozenset:
+        if not isinstance(value, list):
+            raise TypeError("frozenset value must be an array")
+        return frozenset(_decode(args[0], item) for item in value)
     if origin is dict:
         if not isinstance(value, dict):
             raise TypeError("dict value must be an object")

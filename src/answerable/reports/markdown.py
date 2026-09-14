@@ -16,10 +16,13 @@ def render_markdown(run: AssessmentRun) -> str:
     question = data["question"]
     outcome_rates: Any = run.observations.get("outcome_rates", [])
     rates = [
-        f"{item['group']}: {item['rate']:.1%} of {item['entities']} {question['unit_of_analysis']}s"
+        f"{item['group']}: observed mean {item['rate']:.6g}; "
+        f"{item['entities']} {question['unit_of_analysis']}s"
         for item in outcome_rates
     ]
     repairs = data["minimum_evidence_plan"]["minimal"]
+    status = run.observations.get("evidence_status", {})
+    status = status if isinstance(status, dict) else {}
     sections = [
         "# Evidence Warrant",
         "",
@@ -55,8 +58,20 @@ def render_markdown(run: AssessmentRun) -> str:
             f"- Why it matters: {repairs['why_it_matters']}\n"
             f"- How to get it: {repairs['collection_method']}"
             if repairs
-            else "- Nothing; the evidence is complete."
+            else "- No repairable blocker recorded; review the assumptions below."
         ),
+        "",
+        "## Verified facts",
+        "",
+        _bullets(status.get("verified_facts", []), "No facts recorded."),
+        "",
+        "## Declared assumptions (not verified)",
+        "",
+        _bullets(status.get("declared_assumptions", []), "None declared."),
+        "",
+        "## Conditions not verifiable from this table",
+        "",
+        _bullets(status.get("unverifiable_conditions", []), "None required for this scope."),
         "",
         "## Provenance",
         "",

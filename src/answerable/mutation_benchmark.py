@@ -320,6 +320,7 @@ data:
   estimand: "Average treatment effect of exposure on {metric_id}"
   strategy: regression_adjustment
   adjustment_set: ["channel"]
+  identification_assumptions: ["conditional_exchangeability"]
   assumptions:
     - "Exposure is recorded without error."
   falsification_checks: []

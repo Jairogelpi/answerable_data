@@ -62,6 +62,26 @@ Verdict + blockers + allowed claims + forbidden claims
       Evidence Warrant
 ```
 
+## Validity review and external evaluation
+
+A targeted review corrected four issues: overlap no longer stands in for
+exchangeability, all target strata must have empirical support, blockers now
+apply to claim admissibility, and findings link to the checks that produced them.
+Identifying assumptions must be explicitly declared; conditional support is
+reported as `ANSWERABLE_WITH_ASSUMPTIONS`, with facts and unverified conditions
+kept separate. See [ADR 0002](docs/adr/0002-explicit-identification-and-claim-blockers.md).
+
+The [external-data suite](benchmarks/external/README.md) records false blocks as
+well as unsafe allowed claims. Its two datasets are external; its 12 questions
+and labels are project-authored. This is a small regression evaluation, not proof
+of general validity. A paired agent/tool experiment is executable but **has not
+been run with real models in this revision**.
+
+The historical EMT-v2 scores below remain historical frozen results. The live
+fixtures now explicitly declare identifying assumptions and produce conditional
+baseline verdicts; they are not identical inputs to that historical comparison.
+A 100% score on project-authored rules/cases is not general superiority over LLMs.
+
 ## Quickstart
 
 ### 1. Install the production package

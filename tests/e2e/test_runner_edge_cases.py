@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import unittest
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -85,18 +86,25 @@ class RunnerEdgeCaseTest(unittest.TestCase):
             # "cleanly answerable" case has to actually be powered, not
             # just directionally correct on a handful of rows.
             root = _case(Path(directory), "2025-01-10T00:00:00+00:00", size=160)
+            spec = load_spec(root / "question.json")
+            spec = replace(
+                spec,
+                causal=replace(
+                    spec.causal, identification_assumptions=("conditional_exchangeability",)
+                ),
+            )
             run = AssessmentRunner(signer="ci", secret=b"secret").run(
                 data_sources=(root / "customers.csv",),
-                spec=load_spec(root / "question.json"),
+                spec=spec,
                 output_directory=root / "out",
             )
-            self.assertEqual(run.verdict, Verdict.ANSWERABLE)
+            self.assertEqual(run.verdict, Verdict.ANSWERABLE_WITH_ASSUMPTIONS)
             self.assertEqual(run.blockers, ())
             self.assertEqual(run.forbidden_claims, ())
             self.assertEqual(run.allowed_claims, ("Exposure caused higher 90-day retention.",))
             markdown = (root / "out" / "warrant.md").read_text(encoding="utf-8")
             self.assertIn("Nothing blocks this question.", markdown)
-            self.assertIn("the evidence is complete", markdown)
+            self.assertIn("Declared assumptions (not verified)", markdown)
 
     def test_timezone_naive_timestamps_are_a_data_integrity_failure(self) -> None:
         with TemporaryDirectory() as directory:

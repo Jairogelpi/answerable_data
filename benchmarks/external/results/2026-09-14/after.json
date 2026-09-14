@@ -1,0 +1,301 @@
+{
+  "protocol": "external-smoke-v1",
+  "engine_sha256": "a14fd0c8322ba4afde8f472a9a31dbbb70321a2b3ee57d31146e3f65a82e3fb6",
+  "evaluator_sha256": "ead41b0e799587cfedd0998f0d3564dbd973d288a868e409476349490f4a685b",
+  "dependencies": {
+    "duckdb": "1.5.5",
+    "pyyaml": "6.0.3",
+    "sqlglot": "29.0.1"
+  },
+  "python": "3.12.14",
+  "cases_sha256": "eea346e2b4f3a076a9896d4dd40496a7a8c247db82df9a2d21c4229287b60c41",
+  "metrics": {
+    "total": 12,
+    "valid_claims": 4,
+    "invalid_claims": 8,
+    "false_blocks": 0,
+    "unsafe_allows": 0,
+    "false_block_rate": 0.0,
+    "unsafe_allow_rate": 0.0,
+    "release_false_blocks": 0,
+    "errors": 0
+  },
+  "limitations": [
+    "Two external datasets; questions and labels authored within this project.",
+    "Duplicate cases are explicit perturbations of external data.",
+    "No population/causal generalization or independent expert validation.",
+    "Cases within a source are correlated; no independence-based significance test."
+  ],
+  "records": [
+    {
+      "case_id": "flights-full-observed",
+      "source": "flights",
+      "variant": "observed",
+      "expected_allow": true,
+      "claim": "Among these recorded months, the observed mean was 266.25 in January-June and 294.347 in July-December (thousands of international airline passengers).",
+      "data_sha256": "bc393bf899eca2b67062c2eaaba6cb798146e61990f41816fb22bfe75df59f56",
+      "question_sha256": "d25114227976050d3e8a3819c32a55033eb5603882b2c3fc203f1f1a30a5e7cd",
+      "expected_means": {
+        "0": 266.25,
+        "1": 294.34722222222223
+      },
+      "allowed": true,
+      "verdict": "ANSWERABLE",
+      "release_allowed": true,
+      "blockers": [],
+      "observed_means": {
+        "0": 266.25,
+        "1": 294.34722222222223
+      }
+    },
+    {
+      "case_id": "flights-full-causal",
+      "source": "flights",
+      "variant": "causal",
+      "expected_allow": false,
+      "claim": "Assignment to July-December caused the observed difference in outcomes.",
+      "data_sha256": "bc393bf899eca2b67062c2eaaba6cb798146e61990f41816fb22bfe75df59f56",
+      "question_sha256": "47c5825948cc0df660430dd135fc3cb821d54e36007baacba25ba9c2fe8c67ca",
+      "expected_means": {
+        "0": 266.25,
+        "1": 294.34722222222223
+      },
+      "allowed": false,
+      "verdict": "NOT_ANSWERABLE_YET",
+      "release_allowed": false,
+      "blockers": [
+        "identification_evidence_missing",
+        "insufficient_power"
+      ],
+      "observed_means": {
+        "0": 266.25,
+        "1": 294.34722222222223
+      }
+    },
+    {
+      "case_id": "flights-full-duplicate",
+      "source": "flights",
+      "variant": "duplicate",
+      "expected_allow": false,
+      "claim": "Among these recorded months, the observed mean was 266.25 in January-June and 294.347 in July-December (thousands of international airline passengers).",
+      "data_sha256": "b85474b9c087df4021d1903da7cf0b8b540f840a9d337ddd65cf8cf8d5208dc9",
+      "question_sha256": "2ba86a56e87011c6a6dcfd3d11d122665194d2acab8c24a4f75415d0105341a4",
+      "expected_means": {
+        "0": 266.25,
+        "1": 294.34722222222223
+      },
+      "allowed": false,
+      "verdict": "DATA_INTEGRITY_FAILURE",
+      "release_allowed": false,
+      "blockers": [
+        "duplicate_entities"
+      ],
+      "observed_means": {
+        "0": 264.13698630136986,
+        "1": 294.34722222222223
+      }
+    },
+    {
+      "case_id": "flights-first_year-observed",
+      "source": "flights",
+      "variant": "observed",
+      "expected_allow": true,
+      "claim": "Among these recorded months, the observed mean was 124.5 in January-June and 128.833 in July-December (thousands of international airline passengers).",
+      "data_sha256": "4e6f8d715d5f2b3e19293a01a8712cb93dadfb76575d4ed31095a245be4f1e78",
+      "question_sha256": "1e605bef3235d98c40ba3191157f5a7afe4652f810fa8e62471b47f7a4b9e69d",
+      "expected_means": {
+        "0": 124.5,
+        "1": 128.83333333333334
+      },
+      "allowed": true,
+      "verdict": "ANSWERABLE",
+      "release_allowed": true,
+      "blockers": [],
+      "observed_means": {
+        "0": 124.5,
+        "1": 128.83333333333334
+      }
+    },
+    {
+      "case_id": "flights-first_year-causal",
+      "source": "flights",
+      "variant": "causal",
+      "expected_allow": false,
+      "claim": "Assignment to July-December caused the observed difference in outcomes.",
+      "data_sha256": "4e6f8d715d5f2b3e19293a01a8712cb93dadfb76575d4ed31095a245be4f1e78",
+      "question_sha256": "2bb5e04df5e99b271b8818dd4547159920fc126349abd035a642a40bff026330",
+      "expected_means": {
+        "0": 124.5,
+        "1": 128.83333333333334
+      },
+      "allowed": false,
+      "verdict": "NOT_ANSWERABLE_YET",
+      "release_allowed": false,
+      "blockers": [
+        "identification_evidence_missing",
+        "insufficient_power"
+      ],
+      "observed_means": {
+        "0": 124.5,
+        "1": 128.83333333333334
+      }
+    },
+    {
+      "case_id": "flights-first_year-duplicate",
+      "source": "flights",
+      "variant": "duplicate",
+      "expected_allow": false,
+      "claim": "Among these recorded months, the observed mean was 124.5 in January-June and 128.833 in July-December (thousands of international airline passengers).",
+      "data_sha256": "149d5d17f183cc498ca3bc1233123464a44ba810c7b1d71de623f086d962f312",
+      "question_sha256": "f1ee7b62b3f90188a9e3e7c19f72a996dd5f5a4a1d3ec60dea8569c49bef0976",
+      "expected_means": {
+        "0": 124.5,
+        "1": 128.83333333333334
+      },
+      "allowed": false,
+      "verdict": "DATA_INTEGRITY_FAILURE",
+      "release_allowed": false,
+      "blockers": [
+        "duplicate_entities"
+      ],
+      "observed_means": {
+        "0": 122.71428571428571,
+        "1": 128.83333333333334
+      }
+    },
+    {
+      "case_id": "temperatures-full-observed",
+      "source": "temperatures",
+      "variant": "observed",
+      "expected_allow": true,
+      "claim": "Among these recorded days, the observed mean was 12.3503 in January-June and 10.0218 in July-December (degrees Celsius, recorded minimum temperature).",
+      "data_sha256": "3e55cafa171cdaf69b50efe6c5cecc1698c0ee1c087659219113565ec8ea855d",
+      "question_sha256": "c5fc0191c00ea2dd08a731fa0289e53fba9e5bedb80abc64d2d11830b30da4c5",
+      "expected_means": {
+        "0": 12.350275938189846,
+        "1": 10.021817192600652
+      },
+      "allowed": true,
+      "verdict": "ANSWERABLE",
+      "release_allowed": true,
+      "blockers": [],
+      "observed_means": {
+        "0": 12.350275938189856,
+        "1": 10.021817192600656
+      }
+    },
+    {
+      "case_id": "temperatures-full-causal",
+      "source": "temperatures",
+      "variant": "causal",
+      "expected_allow": false,
+      "claim": "Assignment to July-December caused the observed difference in outcomes.",
+      "data_sha256": "3e55cafa171cdaf69b50efe6c5cecc1698c0ee1c087659219113565ec8ea855d",
+      "question_sha256": "a3267390b9fdbfe319acc3ffd1646dc2c082097d30e4bcfbd24904e6450e09b5",
+      "expected_means": {
+        "0": 12.350275938189846,
+        "1": 10.021817192600652
+      },
+      "allowed": false,
+      "verdict": "NOT_ANSWERABLE_YET",
+      "release_allowed": false,
+      "blockers": [
+        "identification_evidence_missing"
+      ],
+      "observed_means": {
+        "0": 12.350275938189856,
+        "1": 10.021817192600656
+      }
+    },
+    {
+      "case_id": "temperatures-full-duplicate",
+      "source": "temperatures",
+      "variant": "duplicate",
+      "expected_allow": false,
+      "claim": "Among these recorded days, the observed mean was 12.3503 in January-June and 10.0218 in July-December (degrees Celsius, recorded minimum temperature).",
+      "data_sha256": "4293fed050bc156bcd1bcb1d8261737a13f25a0b2d47682dc261c8830fdb9c57",
+      "question_sha256": "e0ee1de0ad416eec719a4702cc8fc30de14077a4e58f416cf954b32d8877e646",
+      "expected_means": {
+        "0": 12.350275938189846,
+        "1": 10.021817192600652
+      },
+      "allowed": false,
+      "verdict": "DATA_INTEGRITY_FAILURE",
+      "release_allowed": false,
+      "blockers": [
+        "duplicate_entities"
+      ],
+      "observed_means": {
+        "0": 12.35488141202428,
+        "1": 10.021817192600656
+      }
+    },
+    {
+      "case_id": "temperatures-first_year-observed",
+      "source": "temperatures",
+      "variant": "observed",
+      "expected_allow": true,
+      "claim": "Among these recorded days, the observed mean was 12.9652 in January-June and 10.0929 in July-December (degrees Celsius, recorded minimum temperature).",
+      "data_sha256": "3eae6469bbb4043aef429ee6f63f57019fe7abec9fbbef6a3f59a2ca2f3d60a7",
+      "question_sha256": "48a9b6226563afd546b56dfd3ea0fc0970a290e776f0023586cae4371b140a39",
+      "expected_means": {
+        "0": 12.965193370165746,
+        "1": 10.092934782608696
+      },
+      "allowed": true,
+      "verdict": "ANSWERABLE",
+      "release_allowed": true,
+      "blockers": [],
+      "observed_means": {
+        "0": 12.965193370165743,
+        "1": 10.092934782608696
+      }
+    },
+    {
+      "case_id": "temperatures-first_year-causal",
+      "source": "temperatures",
+      "variant": "causal",
+      "expected_allow": false,
+      "claim": "Assignment to July-December caused the observed difference in outcomes.",
+      "data_sha256": "3eae6469bbb4043aef429ee6f63f57019fe7abec9fbbef6a3f59a2ca2f3d60a7",
+      "question_sha256": "43c4af47404318789d4364c3d5ce4ec3ad3a7663fff19a70d3c2535d65ad4bbd",
+      "expected_means": {
+        "0": 12.965193370165746,
+        "1": 10.092934782608696
+      },
+      "allowed": false,
+      "verdict": "NOT_ANSWERABLE_YET",
+      "release_allowed": false,
+      "blockers": [
+        "identification_evidence_missing"
+      ],
+      "observed_means": {
+        "0": 12.965193370165743,
+        "1": 10.092934782608696
+      }
+    },
+    {
+      "case_id": "temperatures-first_year-duplicate",
+      "source": "temperatures",
+      "variant": "duplicate",
+      "expected_allow": false,
+      "claim": "Among these recorded days, the observed mean was 12.9652 in January-June and 10.0929 in July-December (degrees Celsius, recorded minimum temperature).",
+      "data_sha256": "bd35761ce1641a4b7c8da522a6a5cdef1f98829c5948958a0f5c88743aa17fd3",
+      "question_sha256": "98de04c22a6d738c93d0acc9212ddc6ab7bcd41611acb7b385d5d4f2a4c8dfeb",
+      "expected_means": {
+        "0": 12.965193370165746,
+        "1": 10.092934782608696
+      },
+      "allowed": false,
+      "verdict": "DATA_INTEGRITY_FAILURE",
+      "release_allowed": false,
+      "blockers": [
+        "duplicate_entities"
+      ],
+      "observed_means": {
+        "0": 13.007692307692302,
+        "1": 10.092934782608696
+      }
+    }
+  ]
+}

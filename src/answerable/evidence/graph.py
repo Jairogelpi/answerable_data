@@ -13,6 +13,7 @@ class NodeType(StrEnum):
     OBSERVATION = "observation"
     FACT = "fact"
     ASSUMPTION = "assumption"
+    UNVERIFIABLE_CONDITION = "unverifiable_condition"
     INFERENCE = "inference"
     BLOCKER = "blocker"
     WARNING = "warning"
