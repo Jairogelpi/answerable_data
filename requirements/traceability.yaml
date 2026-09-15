@@ -365,9 +365,9 @@ requirements:
     tests: ["tests/test_interfaces.py"]
     status: verified
   FR-CLI-001:
-    implementation: ["src/answerable/cli.py"]
-    tests: ["tests/test_interfaces.py"]
-    status: verified
+    implementation: ["src/answerable/cli.py", "src/answerable/__init__.py"]
+    tests: ["tests/test_interfaces.py", "tests/test_distribution_version.py"]
+    status: implemented
   FR-MCP-001:
     implementation: ["src/answerable/interfaces/mcp.py"]
     tests: ["tests/test_interfaces.py"]
