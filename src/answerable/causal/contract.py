@@ -30,6 +30,7 @@ class CausalContract:
     assumptions: tuple[str, ...] = ()
     falsification_checks: tuple[str, ...] = ()
     sensitivity_checks: tuple[str, ...] = ()
+    identification_assumptions: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not all((self.treatment, self.outcome, self.population, self.estimand)):
@@ -38,6 +39,15 @@ class CausalContract:
             )
         if self.treatment == self.outcome or self.treatment in self.adjustment_set:
             raise ValueError("invalid treatment/outcome/adjustment relationship")
+        known = {
+            "conditional_exchangeability",
+            "random_assignment",
+            "parallel_trends",
+            "valid_instrument",
+            "valid_discontinuity",
+        }
+        if set(self.identification_assumptions) - known:
+            raise ValueError("unknown identification assumption")
 
 
 class Estimator(Protocol):

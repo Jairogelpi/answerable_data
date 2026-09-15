@@ -1,0 +1,23 @@
+{
+  "protocol": "external-smoke-v1",
+  "retrieved": "2026-09-14",
+  "normalization": "UTF-8 LF; dates encoded as UTC midnight for day/month labels, not measured instants; no row values changed",
+  "sources": [
+    {
+      "id": "flights",
+      "path": "sources/flights.csv",
+      "url": "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/flights.csv",
+      "sha256": "237d834127d9c6355630d8f443a7a2377b5925923010009b59809ba0b67f4fac",
+      "unit": "month",
+      "units": "thousands of international airline passengers"
+    },
+    {
+      "id": "temperatures",
+      "path": "sources/temperatures.csv",
+      "url": "https://raw.githubusercontent.com/jbrownlee/Datasets/master/daily-min-temperatures.csv",
+      "sha256": "a31a6961536b0e48a1f8c886d91eb4de50e6747ea5cd5d2d45a8a5039068e406",
+      "unit": "day",
+      "units": "degrees Celsius, recorded minimum temperature"
+    }
+  ]
+}

@@ -456,3 +456,23 @@ requirements:
     implementation: ["src/answerable/enterprise/connectors.py"]
     tests: ["tests/test_concrete_connectors.py"]
     status: verified
+  INV-001:
+    implementation: ["src/answerable/application/assessment_runner.py"]
+    tests: ["tests/test_validity_adversarial.py"]
+    status: implemented
+  INV-002:
+    implementation: ["src/answerable/evidence/verdict.py"]
+    tests: ["tests/test_validity_adversarial.py", "tests/test_external_evaluation.py"]
+    status: implemented
+  INV-008:
+    implementation: ["src/answerable/application/assessment_runner.py", "src/answerable/causal/contract.py"]
+    tests: ["tests/test_validity_adversarial.py"]
+    status: implemented
+  INV-009:
+    implementation: ["src/answerable/application/assessment_runner.py"]
+    tests: ["tests/test_validity_adversarial.py"]
+    status: implemented
+  INV-010:
+    implementation: ["src/answerable/application/assessment_runner.py"]
+    tests: ["tests/test_validity_adversarial.py"]
+    status: implemented

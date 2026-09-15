@@ -55,7 +55,9 @@ def test_mutation_benchmark_executes_runner_and_passes_release_gate(tmp_path: Pa
     assert report.release_pass
     assert len(report.reproducibility_hash) == 64
     assert (tmp_path / "bench" / "mutation_report.json").is_file()
-    assert all(item.baseline_verdict == "ANSWERABLE" for item in report.observations)
+    assert all(
+        item.baseline_verdict == "ANSWERABLE_WITH_ASSUMPTIONS" for item in report.observations
+    )
     invalidated = [
         item
         for item in report.observations

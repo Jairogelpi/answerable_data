@@ -91,6 +91,7 @@ def load_spec(path: Path) -> AssessmentSpec:
             assumptions=tuple(causal.get("assumptions", ())),
             falsification_checks=tuple(causal.get("falsification_checks", ())),
             sensitivity_checks=tuple(causal.get("sensitivity_checks", ())),
+            identification_assumptions=tuple(causal.get("identification_assumptions", ())),
         ),
         claims=tuple(
             ClaimCandidate(text=item["text"], claim_class=ClaimClass(item["claim_class"]))

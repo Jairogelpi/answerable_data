@@ -30,6 +30,8 @@ class ClaimLinter:
 
     def lint(self, claim: str, context: ClaimContext) -> tuple[str, ...]:
         violations: list[str] = []
+        if context.claim_class is ClaimClass.CAUSAL and not context.causal_gate:
+            violations.append("causal_class_without_identification")
         if self._CAUSAL.search(claim) and (
             context.claim_class is not ClaimClass.CAUSAL or not context.causal_gate
         ):

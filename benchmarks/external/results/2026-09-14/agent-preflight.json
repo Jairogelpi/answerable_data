@@ -1,0 +1,12 @@
+{
+  "status": "not_run",
+  "reason": "No available text-model command and pinned model.",
+  "detected_cli": {
+    "claude": null,
+    "codex": null
+  },
+  "expected_decisions": 48,
+  "actual_decisions": 0,
+  "metrics": null,
+  "manifest_sha256": "004d4e2ece8527fbb0d8d5b1d9153f8398ef19b4022c2853896a5bff12916cb3"
+}

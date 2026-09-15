@@ -1,0 +1,14 @@
+Local verification, 2026-09-14
+
+make verify: PASS
+215 tests passed; branch-aware coverage 96.01% (required 95%).
+Ruff formatting/lint: PASS
+Strict mypy: PASS (73 source files)
+Public schemas: PASS (21)
+Traceability: PASS (119 requirements)
+make build: PASS (sdist and wheel)
+
+Six initial adversarial tests were executed before implementation and all failed.
+The corrected targeted suite (adversarial + external/harness) passed 23 tests.
+Tests using fake model responses validate harness plumbing only.
+No real model decisions were produced.

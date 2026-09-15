@@ -11,9 +11,9 @@ import duckdb
 from answerable.analysis.grain import GrainAnalyzer, GrainStatus
 from answerable.application.models import AssessmentRun, AssessmentSpec, DataMapping
 from answerable.causal.contract import CausalContract, CausalIdentifier
-from answerable.domain.models import CheckPlan, CheckSpec, Verdict
+from answerable.domain.models import AnalysisType, CheckPlan, CheckSpec, Verdict
 from answerable.domain.serialization import fingerprint, to_dict
-from answerable.evidence.claims import ClaimContext
+from answerable.evidence.claims import ClaimClass, ClaimContext
 from answerable.evidence.graph import (
     EdgeType,
     EvidenceGraphStore,
@@ -42,6 +42,10 @@ _INFORMATIVE_MISSINGNESS_THRESHOLD = 0.15
 
 _CATEGORY = {
     "causal_identification_failure": "identification",
+    "identification_evidence_missing": "missing_evidence",
+    "identification_assumed": "assumption",
+    "missing_sensitivity": "assumption",
+    "adjustment_mapping_mismatch": "missing_evidence",
     "positivity_violation": "identification",
     "immature_cohort": "missing_evidence",
     "right_censoring": "missing_evidence",
@@ -50,7 +54,7 @@ _CATEGORY = {
     "prediction_leakage": "data_integrity",
     "duplicate_entities": "data_integrity",
     "ambiguous_grain": "data_integrity",
-    "insufficient_power": "missing_evidence",
+    "insufficient_power": "power",
     "definition_change": "data_integrity",
     "informative_missingness": "missing_evidence",
 }
@@ -66,6 +70,18 @@ _ALL_CLAIMS = frozenset(
 )
 _DESIGN_IMPOSSIBLE = frozenset({"causal_identification_failure", "positivity_violation"})
 _REPAIR = {
+    "identification_evidence_missing": (
+        "Explicit design evidence or declared identifying assumptions.",
+        "Empirical overlap alone does not establish causal identification.",
+        True,
+        "document the design and review identifying assumptions",
+    ),
+    "adjustment_mapping_mismatch": (
+        "A checked covariate mapping matching the declared adjustment set.",
+        "Support was not checked over the intended adjustment variables.",
+        True,
+        "reconcile the adjustment set with the input column mapping",
+    ),
     "causal_identification_failure": (
         "A comparison population that identifies the requested causal estimand.",
         "Without it no observed difference can be attributed to the campaign.",
@@ -161,6 +177,125 @@ _CHECKS = (
 )
 
 
+_FINDING_CHECK = {
+    "duplicate_entities": "chk_grain_uniqueness",
+    "ambiguous_grain": "chk_grain_uniqueness",
+    "invalid_event_time": "chk_temporal_maturity",
+    "timezone_ambiguity": "chk_temporal_maturity",
+    "immature_cohort": "chk_temporal_maturity",
+    "right_censoring": "chk_temporal_maturity",
+    "prediction_leakage": "chk_temporal_maturity",
+    "definition_change": "chk_metric_definition",
+    "informative_missingness": "chk_outcome_missingness",
+    "insufficient_power": "chk_statistical_power",
+    "positivity_violation": "chk_positivity_overlap",
+    "causal_identification_failure": "chk_causal_identification",
+    "identification_evidence_missing": "chk_causal_identification",
+    "identification_assumed": "chk_causal_identification",
+    "adjustment_mapping_mismatch": "chk_causal_identification",
+    "missing_sensitivity": "chk_causal_identification",
+}
+_EXTRA_CHECKS = tuple(
+    CheckSpec(
+        check_id=check_id,
+        check_type=kind,
+        check_version="1.0",
+        requirement_id=requirement,
+        executor="python",
+        severity_on_failure="blocker",
+        rationale=rationale,
+        mandatory=True,
+    )
+    for check_id, kind, requirement, rationale in (
+        (
+            "chk_metric_definition",
+            "metric.definition",
+            "INV-009",
+            "Check stable metric definitions.",
+        ),
+        (
+            "chk_outcome_missingness",
+            "quality.missingness",
+            "INV-009",
+            "Compare outcome missingness by group.",
+        ),
+        (
+            "chk_statistical_power",
+            "statistical.power",
+            "INV-005",
+            "Assess inferential precision limitations.",
+        ),
+        ("chk_observed_means", "descriptive.means", "INV-001", "Compute observed group means."),
+    )
+)
+
+
+def _requires_causal(spec: AssessmentSpec) -> bool:
+    return spec.contract.analysis_type is AnalysisType.CAUSAL or any(
+        claim.claim_class is ClaimClass.CAUSAL for claim in spec.claims
+    )
+
+
+def _checks_for(spec: AssessmentSpec) -> tuple[CheckSpec, ...]:
+    checks = list(_CHECKS[:2])
+    if _requires_causal(spec):
+        checks.extend(_CHECKS[2:])
+    for check in _EXTRA_CHECKS:
+        if check.check_id == "chk_metric_definition" and not spec.mapping.metric_definition_column:
+            continue
+        if (
+            check.check_id == "chk_statistical_power"
+            and spec.contract.analysis_type is AnalysisType.DESCRIPTIVE
+            and not _requires_causal(spec)
+        ):
+            continue
+        checks.append(check)
+    return tuple(checks)
+
+
+def _evidence_status(
+    spec: AssessmentSpec, rows: tuple[dict[str, object], ...], findings: tuple[Finding, ...]
+) -> dict[str, Any]:
+    facts: list[dict[str, object]] = [
+        {"id": "row_count", "value": len(rows), "check_id": "chk_grain_uniqueness"},
+        {
+            "id": "unique_entities",
+            "value": len({r["entity"] for r in rows}) == len(rows),
+            "check_id": "chk_grain_uniqueness",
+        },
+    ]
+    if _requires_causal(spec):
+        facts.append(
+            {
+                "id": "empirical_stratum_overlap",
+                "value": _overlap(rows, spec.mapping),
+                "check_id": "chk_positivity_overlap",
+            }
+        )
+    assumptions = list(
+        dict.fromkeys(
+            (
+                *spec.contract.assumptions,
+                *spec.causal.assumptions,
+                *spec.causal.identification_assumptions,
+            )
+        )
+    )
+    return {
+        "verified_facts": facts,
+        "declared_assumptions": assumptions,
+        "unverifiable_conditions": (
+            [
+                "Absence of unmeasured confounding is not established by observed overlap.",
+                "The declared design assumptions require evidence beyond this table.",
+            ]
+            if _requires_causal(spec)
+            else []
+        ),
+        "conditional_identification": any(f.code == "identification_assumed" for f in findings),
+    }
+
+
 @dataclass(frozen=True, slots=True)
 class _Descriptive:
     """Group rates for the declared outcome. Descriptive only, never causal."""
@@ -205,7 +340,7 @@ class AssessmentRunner:
             "asm_"
             + fingerprint(
                 {
-                    "question": to_dict(spec.contract),
+                    "spec": to_dict(spec),
                     "sources": [item.fingerprint for item in snapshots],
                 }
             )[:16]
@@ -217,8 +352,10 @@ class AssessmentRunner:
 
         findings = _run_checks(snapshots[0], rows, descriptive, spec)
         finding_inputs = tuple(_to_finding_input(item) for item in findings)
-        identified = not any(
-            item.code in _DESIGN_IMPOSSIBLE
+        identified = _requires_causal(spec) and not any(
+            item.code
+            in _DESIGN_IMPOSSIBLE
+            | {"identification_evidence_missing", "adjustment_mapping_mismatch"}
             for item in findings
             if item.severity is Severity.BLOCKER
         )
@@ -241,7 +378,8 @@ class AssessmentRunner:
         verdict = VerdictEngine().decide(finding_inputs, claims=claims)
 
         repairs = _repair_plan(findings)
-        graph = _build_graph(spec, snapshots, descriptive, findings, verdict)
+        status = _evidence_status(spec, rows, findings)
+        graph = _build_graph(spec, snapshots, descriptive, findings, verdict, status)
         observations = {
             "identified": identified,
             "outcome_rates": [
@@ -250,6 +388,7 @@ class AssessmentRunner:
             ],
             "observed_difference": descriptive.difference,
             "baseline": descriptive.baseline,
+            "evidence_status": status,
         }
         payload = _warrant_payload(
             assessment_id, spec, snapshots, verdict, findings, repairs, observations, graph
@@ -371,12 +510,23 @@ def _describe(path: Path, mapping: DataMapping) -> _Descriptive:
 
 
 def _overlap(rows: tuple[dict[str, object], ...], mapping: DataMapping) -> bool:
-    """Positivity: some stratum must contain both treatment levels."""
+    """Conservative binary support check over every declared target stratum.
+
+    Empirical support is not proof of population positivity or exchangeability.
+    Continuous covariates require an explicitly reviewed coarsening upstream.
+    """
     strata: dict[tuple[object, ...], set[object]] = {}
     for row in rows:
         key = tuple(row.get(name) for name in mapping.covariate_columns)
         strata.setdefault(key, set()).add(row["treatment"])
-    return any(len(levels) > 1 for levels in strata.values())
+    levels = {row["treatment"] for row in rows}
+    return (
+        len(levels) == 2
+        and None not in levels
+        and bool(strata)
+        and all(values == levels for values in strata.values())
+        and all(None not in key for key in strata)
+    )
 
 
 def _run_checks(
@@ -432,27 +582,59 @@ def _run_checks(
         findings.extend(TemporalAssessor.definition_changes(versions))
     findings.extend(_missingness_findings(rows, spec.mapping))
 
-    overlap = _overlap(rows, spec.mapping)
-    if not overlap:
-        findings.append(
-            Finding(
-                "positivity_violation",
-                Severity.BLOCKER,
-                "No covariate stratum contains both exposed and unexposed entities.",
-                (spec.mapping.treatment_column, *spec.mapping.covariate_columns),
+    if _requires_causal(spec):
+        overlap = _overlap(rows, spec.mapping)
+        if not overlap:
+            findings.append(
+                Finding(
+                    "positivity_violation",
+                    Severity.BLOCKER,
+                    "Every target covariate stratum must contain both binary treatment levels.",
+                    (spec.mapping.treatment_column, *spec.mapping.covariate_columns),
+                )
             )
-        )
-    findings.extend(
-        CausalIdentifier()
-        .assess(
+        mapping_matches = spec.causal.adjustment_set == frozenset(spec.mapping.covariate_columns)
+        if not mapping_matches:
+            findings.append(
+                Finding(
+                    "adjustment_mapping_mismatch",
+                    Severity.BLOCKER,
+                    "Declared adjustment set differs from the checked covariates.",
+                )
+            )
+        declared = set(spec.causal.identification_assumptions)
+        causal = CausalIdentifier().assess(
             spec.causal,
             _ObservedDifferenceEstimator(descriptive),
             positivity_supported=overlap,
-            exchangeability_supported=overlap,
+            exchangeability_supported="conditional_exchangeability" in declared and mapping_matches,
+            randomization_valid="random_assignment" in declared,
+            parallel_trends_supported="parallel_trends" in declared,
+            instrument_valid="valid_instrument" in declared,
+            discontinuity_valid="valid_discontinuity" in declared,
         )
-        .findings
-    )
-    findings.extend(_power_findings(rows))
+        for finding in causal.findings:
+            if finding.code == "causal_identification_failure" and overlap:
+                findings.append(
+                    Finding(
+                        "identification_evidence_missing",
+                        Severity.BLOCKER,
+                        "Identifying conditions are neither established nor explicitly assumed.",
+                    )
+                )
+            else:
+                findings.append(finding)
+        if causal.identified:
+            findings.append(
+                Finding(
+                    "identification_assumed",
+                    Severity.WARNING,
+                    "Identification is conditional on declared assumptions. "
+                    "Not verified: the mean difference remains descriptive, not adjusted.",
+                )
+            )
+    if spec.contract.analysis_type is not AnalysisType.DESCRIPTIVE or _requires_causal(spec):
+        findings.extend(_power_findings(rows))
     return tuple(findings)
 
 
@@ -558,6 +740,7 @@ def _build_graph(
     descriptive: _Descriptive,
     findings: tuple[Finding, ...],
     verdict: VerdictResult,
+    status: dict[str, Any],
 ) -> dict[str, object]:
     store = EvidenceGraphStore()
     store.add_node(
@@ -579,10 +762,9 @@ def _build_graph(
                 },
             )
         )
-    for check in _CHECKS:
+    for check in _checks_for(spec):
         store.add_node(GraphNode(check.check_id, NodeType.EXECUTION, {"type": check.check_type}))
-        for snapshot in snapshots:
-            store.add_edge(GraphEdge(check.check_id, snapshot.asset_id, EdgeType.USES))
+        store.add_edge(GraphEdge(check.check_id, snapshots[0].asset_id, EdgeType.USES))
     store.add_node(
         GraphNode(
             "obs_outcome_rates",
@@ -595,24 +777,37 @@ def _build_graph(
             },
         )
     )
-    store.add_edge(GraphEdge("obs_outcome_rates", "chk_grain_uniqueness", EdgeType.COMPUTED_FROM))
+    store.add_edge(GraphEdge("obs_outcome_rates", "chk_observed_means", EdgeType.COMPUTED_FROM))
     for finding in findings:
         node_type = NodeType.BLOCKER if finding.severity is Severity.BLOCKER else NodeType.WARNING
         store.add_node(
             GraphNode(f"finding_{finding.code}", node_type, {"message": finding.message})
         )
         store.add_edge(
-            GraphEdge(f"finding_{finding.code}", "chk_positivity_overlap", EdgeType.DEPENDS_ON)
+            GraphEdge(f"finding_{finding.code}", _FINDING_CHECK[finding.code], EdgeType.DEPENDS_ON)
         )
+    for index, fact in enumerate(status["verified_facts"]):
+        node_id = f"fact_{index}"
+        store.add_node(GraphNode(node_id, NodeType.FACT, fact))
+        store.add_edge(GraphEdge(node_id, str(fact["check_id"]), EdgeType.COMPUTED_FROM))
+    for key, node_type in (
+        ("declared_assumptions", NodeType.ASSUMPTION),
+        ("unverifiable_conditions", NodeType.UNVERIFIABLE_CONDITION),
+    ):
+        for index, statement in enumerate(status[key]):
+            store.add_node(GraphNode(f"{key}_{index}", node_type, {"statement": statement}))
     for index, claim in enumerate(verdict.allowed_claims):
         node = f"claim_allowed_{index}"
         store.add_node(GraphNode(node, NodeType.ALLOWED_CLAIM, {"text": claim}))
         store.add_edge(GraphEdge(node, "obs_outcome_rates", EdgeType.DEPENDS_ON))
+        for index in range(len(status["declared_assumptions"])):
+            store.add_edge(GraphEdge(node, f"declared_assumptions_{index}", EdgeType.ASSUMES))
     for index, claim in enumerate(verdict.forbidden_claims):
         node = f"claim_forbidden_{index}"
         store.add_node(GraphNode(node, NodeType.FORBIDDEN_CLAIM, {"text": claim}))
         for finding in findings:
-            if finding.severity is Severity.BLOCKER:
+            candidate = next(candidate for candidate in spec.claims if candidate.text == claim)
+            if VerdictEngine.blocks_claim(_to_finding_input(finding), candidate.claim_class):
                 store.add_edge(GraphEdge(f"finding_{finding.code}", node, EdgeType.BLOCKS))
     store.validate_claims()
     return store.export()
@@ -645,7 +840,15 @@ def _warrant_payload(
             {"code": item.finding_id, "category": item.category, "message": item.message}
             for item in verdict.decisive_findings
         ],
-        "assumptions": list(spec.causal.assumptions),
+        "assumptions": list(
+            dict.fromkeys(
+                (
+                    *spec.contract.assumptions,
+                    *spec.causal.assumptions,
+                    *spec.causal.identification_assumptions,
+                )
+            )
+        ),
         "limitations": [item.message for item in findings if item.severity is Severity.WARNING],
         "data_quality_relevance": observations,
         "minimum_evidence_plan": {
@@ -653,9 +856,9 @@ def _warrant_payload(
             "minimal": to_dict(minimal) if minimal else None,
         },
         "permitted_analysis": (
-            "descriptive comparison only"
-            if verdict.verdict is not Verdict.ANSWERABLE
-            else "full analysis"
+            "only the listed allowed claims; no adjusted causal estimate is computed"
+            if verdict.allowed_claims
+            else "none"
         ),
         "provenance": [
             {
@@ -667,7 +870,7 @@ def _warrant_payload(
             for item in snapshots
         ],
         "reproducibility_manifest": {
-            "checks": [to_dict(item) for item in _CHECKS],
+            "checks": [to_dict(item) for item in _checks_for(spec)],
             "evidence_graph_hash": graph["content_hash"],
         },
         "approvals": [],
@@ -677,6 +880,10 @@ def _warrant_payload(
 
 def _explain(verdict: Verdict, findings: tuple[Finding, ...]) -> str:
     blockers = [item.message for item in findings if item.severity is Severity.BLOCKER]
+    if verdict is Verdict.ANSWERABLE_WITH_ASSUMPTIONS:
+        return (
+            "The conclusion is conditional on declared assumptions; these are not verified facts."
+        )
     if not blockers:
         return "The available evidence supports the requested conclusion."
     return (
@@ -705,7 +912,7 @@ def _write(
             CheckPlan(
                 plan_id=f"pln_{assessment_id.removeprefix('asm_')}",
                 assessment_id=assessment_id,
-                checks=_CHECKS,
+                checks=_checks_for(spec),
             )
         ),
         "findings": [to_dict(item) for item in findings],
