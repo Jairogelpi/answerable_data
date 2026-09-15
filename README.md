@@ -4,7 +4,7 @@
 
 ### Evidence before answers.
 
-**A deterministic validity layer for analytics and AI agents.**
+**Explicit data and analysis checks for analytics and AI agents.**
 
 Your code has tests. Your data has tests. **Your conclusions should too.**
 
@@ -20,13 +20,15 @@ Your code has tests. Your data has tests. **Your conclusions should too.**
 </div>
 
 > [!IMPORTANT]
-> **A correct number does not imply a justified conclusion.** Answerable checks whether the available evidence supports the claim an analyst or agent is about to make — and fails closed when it does not.
+> **Status: alpha.** Answerable checks explicit data and analysis conditions within its implemented scope. Its reports separate verified facts, declared assumptions and conditions not verifiable from the supplied table.
+>
+> CLI and MCP have automated tests. The external-data evaluation uses two datasets and 12 project-authored questions. Improvement from giving an agent Answerable has **not yet been demonstrated with real models**. See [validation evidence](docs/VALIDATION.md) and [stable release criteria](docs/RELEASE_CRITERIA.md).
 
 ![Answerable terminal demo](docs/demo.svg)
 
 ### AI agent + Answerable
 
-The agent explores and explains; Answerable deterministically checks whether the evidence supports the conclusion before it reaches a user.
+The agent explores and explains; Answerable checks the declared conditions before the agent publishes a conclusion. This is the intended integration workflow, not an experimentally demonstrated improvement in agent decisions.
 
 <img src="docs/answerable-agent-workflow.svg" alt="AI agent workflow with and without Answerable" width="100%">
 
@@ -84,7 +86,9 @@ A 100% score on project-authored rules/cases is not general superiority over LLM
 
 ## Quickstart
 
-### 1. Install the production package
+### 1. Install the published alpha package
+
+PyPI contains tagged releases; unreleased changes on `main` require a source installation.
 
 For CLI + MCP integration:
 
@@ -152,20 +156,19 @@ Most analytical tooling stops at one of three boundaries: whether the data is st
 
 > **Does this evidence justify this conclusion?**
 
-| Capability | Data tests | Statistical code | LLM-as-judge | Answerable |
-| --- | ---: | ---: | ---: | ---: |
-| Check schema/nulls/duplicates | Yes | Sometimes | Sometimes | **Yes** |
-| Check grain and joins | Sometimes | Manual | Sometimes | **Yes** |
-| Check temporal maturity | Rarely | Manual | Sometimes | **Yes** |
-| Check causal identification | No | Manual | Nondeterministic | **Yes** |
-| Check prediction-time leakage | Rarely | Manual | Nondeterministic | **Yes** |
-| Decide whether a claim must be retracted | No | No | Nondeterministic | **Yes** |
-| Produce machine-readable blockers | Sometimes | Custom | Variable | **Yes** |
-| Produce allowed/forbidden claims | No | No | Variable | **Yes** |
-| Produce a verifiable evidence artifact | No | No | No | **Evidence Warrant** |
-| Deterministic release gate | Yes | Possible | No | **Yes** |
+| Implemented surface | What it checks or produces | Boundary |
+| --- | --- | --- |
+| File assessment | Declared entity grain, duplicates, timing and configured checks | Assessment currently evaluates the first source; this is not arbitrary multi-table validation. |
+| Descriptive comparisons | Observed group means and admissibility under the declared contract | No general numerical or semantic verification of arbitrary prose. |
+| Causal gate | Declared identifying assumptions, adjustment mapping and empirical binary-treatment support | Overlap is not exchangeability. Declared assumptions remain unverified; no adjusted causal effect estimation. |
+| Other analytical checks | Explicit metadata for timing leakage, metric changes, power and missingness in supported cases | Detector coverage is bounded; it does not certify arbitrary predictive or statistical analyses. |
+| Verdict and claim lists | Deterministic blockers and permitted candidate claim classes | Consumers must read the verdict, blockers and assumptions as well as the claim list. |
+| Evidence Warrant | Findings, provenance and integrity verification | Integrity verification does not establish scientific truth or independent certification. |
+| CLI, Python and MCP | Executable local interfaces | HTTP/web modules are contract surfaces, not a complete hosted product. |
 
-Answerable is not trying to replace data-quality frameworks, statistical libraries or LLMs. It is the **claim-validity layer between them and the statement that reaches a human or downstream agent**.
+The complete target specification includes capabilities beyond the current executable
+assessment path. A domain module or passing unit test does not establish end-to-end
+support for every workflow described in that specification.
 
 ## Who it is for
 
@@ -212,7 +215,7 @@ Evidence Warrant
 
 ### Frozen benchmark
 
-The `emt-v2` benchmark is hash-addressed and immutable once published. The current release gate runs 112 paired evidence mutations across seven independent failure classes.
+The `emt-v2` benchmark is hash-addressed and immutable once published. The current release gate runs 112 paired evidence mutations across seven failure classes.
 
 ### Real external-agent runs
 
@@ -222,7 +225,7 @@ The repository includes full prompts, raw responses, decisions and scoring artif
 
 The engineering verification path includes branch-aware coverage of at least 95%, strict mypy, Ruff, schema validation, requirement traceability, clean package build/install, deterministic mutation testing and CodeQL.
 
-## Answerable vs real LLM agents
+## Historical comparison with real LLM agents
 
 On the frozen `emt-v2` case set, Answerable and external LLMs were asked to update a conclusion after the evidence changed. The repository contains the raw runs and scoring artifacts.
 
@@ -232,6 +235,8 @@ On the frozen `emt-v2` case set, Answerable and external LLMs were asked to upda
 | --- | ---: | ---: | ---: |
 | Overall oracle accuracy | **100%** | 79.0% | 60.7% |
 | Unsafe `KEEP` | **0%** | 0% | 0% |
+
+These are historical, project-authored oracle scores, not an independent estimate of general reliability. The paired agent-with-tool experiment remains pending.
 
 The interesting failure is not arithmetic. Both models handled familiar leakage failures well, but frequently softened several statistical and causal invalidations into `QUALIFY` instead of retracting the claim. The full methodology, raw responses, sample-size caveats and per-class results are preserved under [`benchmarks/epistemic_mutations/results/2026-08-17-emt-v2-claude-codex/`](benchmarks/epistemic_mutations/results/2026-08-17-emt-v2-claude-codex/).
 

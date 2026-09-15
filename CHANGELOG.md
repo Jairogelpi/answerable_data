@@ -4,6 +4,21 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
+- Explicit validation evidence and measurable stable-release criteria, including independent held-out questions, paired real-agent evaluation and external pilots.
+- Windows/Python 3.12 CI alongside Linux/Python 3.11 and 3.12; clean-wheel checks on both operating systems.
+- Regression checks for agreement between distribution, public Python and CLI versions.
+
+### Changed
+- README now identifies the package as alpha and distinguishes implemented checks from the complete target specification and historical benchmark results.
+- External evaluation protocol defines independent review, dataset-level holdout, error accounting and paired comparison criteria; these planned evaluations have not been completed.
+- Causal identification requires explicit named assumptions and reports conditional support separately from verified facts. Descriptive questions no longer require causal identification or inferential power (PR #22).
+
+### Fixed
+- Overlap no longer substitutes for exchangeability; support is required in every target stratum. Deterministic blockers govern claim lists and findings link to their producing checks (PR #22).
+- Public `answerable.__version__` agrees with package and CLI version `0.3.0` instead of reporting `0.2.0`.
+
+
 ## [0.3.0] - 2026-08-17
 
 ### Added

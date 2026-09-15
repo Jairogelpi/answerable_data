@@ -104,3 +104,58 @@ responses remain incomplete. Existing run reports cannot be overwritten.
 
 Unit-test adapters are test doubles only and are never published as agent results.
 The recorded preflight currently has **zero real model decisions**.
+
+## Planned independent acceptance evaluation
+
+**Status: protocol only; not collected or executed.** The current scripts
+materialize the 12 smoke cases above. They do not yet ingest a general independent
+question bank, adjudicate labels, calculate dataset-cluster intervals, or fetch
+provider billing. Implement and validate those capabilities before using them for
+[stable-release acceptance](../../docs/RELEASE_CRITERIA.md).
+
+1. Collect at least 100 questions across at least 10 externally sourced datasets.
+   Record source/license, retrieval date, transformations and content hashes. Include
+   valid, invalid, ambiguous and out-of-scope claims, not just mutations of failures.
+2. Split by whole dataset before engine evaluation: reserve at least five datasets
+   with at least 40 valid and 40 invalid questions in total. Keep development cases
+   separate; do not tune on reserved data. More questions than the minimum may be
+   needed to satisfy the split and coverage requirements.
+3. An independent domain reviewer, who did not implement the relevant checks, labels
+   each question before seeing engine output. Store claim, scope, expected decision,
+   factual basis, required assumptions, severity, reasoning and reviewer/date.
+   Record disagreements and adjudication; unresolved cases remain ambiguous.
+4. Include duplicates, missing values, temporal ambiguity, immature cohorts, partial
+   overlap, confounding, mismatched adjustments, metric changes, leakage and valid
+   descriptive questions. Include unsupported formats/designs explicitly. Do not
+   expect support beyond the advertised scope or secretly remove those cases.
+5. Freeze labels, split, hashes, engine revision, metrics and release thresholds.
+   Run every case and retain exceptions/timeouts. For valid/invalid labels report
+   both claim-list and verdict-gated decisions. Report ambiguous/out-of-scope cases
+   separately, with the engine's actual response and whether it states a limitation.
+6. Publish numerator/denominator for unsafe allows and false blocks, execution
+   errors, and per-dataset/per-class counts. Give uncertainty at the dataset level;
+   zero observed failures is not proof of zero risk. An errored case has no valid
+   decision and cannot be counted as a correct block.
+
+### Paired real-model extension
+
+Use exactly the frozen questions/evidence in both arms, a pinned model version,
+identical base prompts, fresh sessions, counterbalanced order and a declared budget.
+Keep the existing intention-to-treat policy: tool availability does not imply use.
+Record all prompts, responses, real tool calls, errors and latency. Capture provider
+usage and cost when the adapter exposes them; otherwise mark cost unavailable.
+Never infer actual billed cost from a guessed token count.
+
+Primary outcome: unsafe-allow rate alone minus unsafe-allow rate with the tool on
+invalid questions. Also report valid false-block differences, regressions,
+improvements, complete pairs and tool usage. Apply identical scoring in both arms.
+Use paired dataset-cluster resampling for a 95% interval; repeated calls and related
+questions stay in the same cluster. Freeze the resampling seed and method before
+running models. The release gate requires a positive safety improvement interval,
+a false-block increase of no more than two percentage points and a complete run.
+A small/inconclusive interval or a baseline with zero unsafe allows does not establish
+benefit; retain the result and extend the evaluation prospectively.
+
+The present 48-decision smoke plan does not satisfy this independent protocol.
+Passing test-double adapters verifies plumbing only. A native MCP host evaluation
+would be a separately specified experiment; do not conflate it with mediated calls.
