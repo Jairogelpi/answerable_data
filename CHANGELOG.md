@@ -15,6 +15,7 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 - Causal identification requires explicit named assumptions and reports conditional support separately from verified facts. Descriptive questions no longer require causal identification or inferential power (PR #22).
 
 ### Fixed
+- Preserve byte-identical external benchmark snapshots and reports on Windows checkouts; keep strict SHA-256 validation enabled and test `core.autocrlf=true` checkout reproducibility.
 - Overlap no longer substitutes for exchangeability; support is required in every target stratum. Deterministic blockers govern claim lists and findings link to their producing checks (PR #22).
 - Public `answerable.__version__` agrees with package and CLI version `0.3.0` instead of reporting `0.2.0`.
 

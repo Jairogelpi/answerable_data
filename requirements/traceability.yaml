@@ -1,9 +1,9 @@
 schema_version: "1.0"
 requirements:
   INV-006:
-    implementation: ["src/answerable/domain/serialization.py"]
-    tests: ["tests/test_serialization.py"]
-    status: verified
+    implementation: ["src/answerable/domain/serialization.py", ".gitattributes"]
+    tests: ["tests/test_serialization.py", "tests/test_benchmark_checkout.py"]
+    status: implemented
   INV-011:
     implementation: ["src/answerable/persistence/sqlite.py"]
     tests: ["tests/test_sqlite_repository.py"]

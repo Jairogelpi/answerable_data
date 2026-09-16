@@ -8,6 +8,11 @@ Answerable. It is a **smoke evaluation, not independent scientific validation**.
 
 `manifest.json` records source URLs, retrieval date, SHA-256 and normalization.
 Vendored CSV snapshots reproduce the run without a network request.
+Git attributes preserve these snapshots and recorded reports byte for byte on
+Windows as well as Linux. SHA-256 validation remains strict: modified sources
+are rejected rather than silently normalized. If an older checkout already
+converted the files to CRLF, use a fresh clone containing this fix; do not
+regenerate the manifest hashes to accept the converted files.
 
 - `flights`: 144 monthly observations from the seaborn example-data repository,
   the international airline-passenger series also distributed as R AirPassengers.

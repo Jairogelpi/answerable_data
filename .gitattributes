@@ -1,3 +1,7 @@
 # Frozen benchmark releases are hash-addressed. Keep them byte-identical on
 # every platform so checksums verify after a clone on Windows.
 benchmarks/releases/** -text
+
+# External source snapshots and recorded reports also have byte-level hashes.
+# Do not rewrite their line endings during checkout, including on Windows.
+benchmarks/external/** -text

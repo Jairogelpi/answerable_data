@@ -1,6 +1,6 @@
 # Validation evidence
 
-Status: alpha. Evidence reviewed on 2026-09-15. This document separates software
+Status: alpha. Evidence reviewed on 2026-09-16. This document separates software
 verification from evidence of analytical validity and integration benefit.
 The complete target in PRODUCT_SPEC.md is not a statement that all workflows
 are implemented or independently validated.
@@ -32,6 +32,19 @@ Historical Claude/Codex EMT runs compare agents without Answerable against the
 engine on frozen project oracles. They do not measure the effect of giving an
 agent the tool. The new paired harness records **not_run**, zero actual decisions
 and null metrics until an authenticated real-model adapter is provided.
+
+## Windows portability follow-up
+
+After PR #23 merged as `c432104cdcfdfcfd51655a232646d3e95db2999b`,
+[CI](https://github.com/Jairogelpi/answerable_data/actions/runs/34963430790)
+passed all three package jobs and both Linux quality jobs. Windows quality ended
+with 213 passed and three failed tests: source hash mismatch in the external suite.
+A successful package installation did not establish a passing Windows test suite.
+
+A regression reproduces the mismatch with Git `core.autocrlf=true`. The follow-up
+fix extends byte-preserving Git attributes to external snapshots and recorded
+reports. Strict SHA-256 checking is retained. Its CI must pass on Windows before
+the portability defect is considered resolved; the old failing run remains evidence.
 
 ## Current boundaries
 
