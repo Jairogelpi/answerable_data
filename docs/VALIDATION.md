@@ -97,3 +97,20 @@ Independent questions and labels, dataset-level held-out evaluation, real-model
 paired results, and external pilots remain pending. Windows jobs are introduced
 in the release-readiness change; inspect that revision's CI before claiming a pass.
 [Release criteria](RELEASE_CRITERIA.md) define the gates and their evidence owners.
+
+## Numeric-claim correction (2026-09-17)
+
+The earlier 12-case snapshot did not test false numerical text. A real Bike
+Sharing test found that such text could be admitted. It does not constitute
+validation of numerical claims. Current source verifies the closed descriptive
+format in [CLAIM_VERIFICATION.md](CLAIM_VERIFICATION.md), with adversarial tests
+for invented values, swapped groups, altered counts, columns and extra prose.
+The default external suite now has 20 cases. The optional free-text extension
+has 24 and deliberately exposes four false blocks among eight valid statements.
+Keep these different protocols separate when reporting historical scores.
+
+The current power calculation already uses sample variances for numerical
+outcomes; it is not a binomial-only calculation. Its observed-effect normal
+approximation is not prospective design power and does not account for temporal
+dependence in the bike series. Neither it nor the new claim verifier establishes
+causality or stable product readiness.

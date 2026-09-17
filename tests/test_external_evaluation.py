@@ -16,9 +16,9 @@ from evaluate_external import evaluate, materialize, metrics
 def test_BENCH_external_data_keeps_valid_claims_and_rejects_invalid(tmp_path: Path) -> None:
     report = evaluate(tmp_path)
     assert report["metrics"] == {
-        "total": 12,
+        "total": 20,
         "valid_claims": 4,
-        "invalid_claims": 8,
+        "invalid_claims": 16,
         "false_blocks": 0,
         "unsafe_allows": 0,
         "false_block_rate": 0.0,
@@ -106,3 +106,11 @@ def test_BENCH_paired_scores_include_regressions_and_exclude_incomplete_pairs() 
     assert result["complete_pairs"] == 2
     assert result["improved"] == result["regressed"] == 1
     assert result["accuracy_delta"] == 0
+
+
+def test_BENCH_free_text_false_blocks_remain_visible(tmp_path: Path) -> None:
+    scores = evaluate(tmp_path, include_free_text=True)["metrics"]
+    assert scores["total"] == 24
+    assert scores["valid_claims"] == 8
+    assert scores["false_blocks"] == scores["release_false_blocks"] == 4
+    assert scores["unsafe_allows"] == scores["errors"] == 0

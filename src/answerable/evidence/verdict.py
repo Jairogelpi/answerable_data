@@ -37,6 +37,7 @@ class VerdictEngine:
         findings: tuple[FindingInput, ...],
         *,
         claims: tuple[tuple[str, ClaimContext], ...] = (),
+        verified_descriptive_claims: tuple[str, ...] = (),
     ) -> VerdictResult:
         blockers = tuple(item for item in findings if item.severity in {"blocker", "fatal"})
         if any(item.repairability is None for item in blockers):
@@ -46,9 +47,11 @@ class VerdictEngine:
         forbidden: list[str] = []
         linter = ClaimLinter()
         for claim, context in claims:
-            if linter.lint(claim, context) or any(
-                self.blocks_claim(item, context.claim_class) for item in blockers
-            ):
+            if (
+                context.claim_class is not ClaimClass.DESCRIPTIVE
+                or claim not in verified_descriptive_claims
+                or linter.lint(claim, context)
+            ) or any(self.blocks_claim(item, context.claim_class) for item in blockers):
                 forbidden.append(claim)
             else:
                 allowed.append(claim)

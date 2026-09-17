@@ -27,19 +27,35 @@ are encoded as UTC midnight for the runner; these are date labels, not claimed
 measurement times. Group 0 is January–June, group 1 July–December. Scope is either
 the complete series or its first year. No population generalization is requested.
 
-Each of the four dataset/scope combinations has three questions:
+Each of the four dataset/scope combinations has five restricted-format cases:
 
 1. **Valid:** the two observed sample means, computed independently with
-   `statistics.mean`, with explicit population and units.
+   `statistics.mean`, in the documented canonical mean format; columns and scope are explicit.
 2. **Invalid causal claim:** attributing that difference to assignment to the
    second half of the year, with no supplied identification evidence/assumptions.
 3. **Invalid grain:** the descriptive candidate after intentionally duplicating
    one dated entity under a one-row-per-date contract. This is an explicit
    perturbation, not a claim that the original source has duplicate records.
 
+4. **False number:** a group mean is replaced with 99999.
+5. **Swapped means:** the correct values are assigned to the opposite groups.
+
+An optional sixth case keeps the original truthful free prose. It intentionally
+measures valid claims that the closed verifier cannot support:
+
+```bash
+python scripts/evaluate_external.py --output runs/external-free-text --include-free-text
+```
+
+This broader evaluation returns nonzero because four valid free-text claims are
+blocked (4/8 valid; 0/16 unsafe allows). Do not ignore that failure in publication
+claims. The default 20-case CI gate has zero false blocks in its narrower
+supported grammar. Thresholds remain unchanged. Neither suite proves arbitrary
+natural-language verification. Historical v1 results used different claims.
+
 Labels, data hashes and question hashes are written before calling the runner.
 The labels/questions are project-authored, not externally peer-reviewed. Cases
-share source data and are correlated. Do not treat 12 cases or repeated agent
+share source data and are correlated. Do not treat 20 restricted-format cases or repeated agent
 calls as independent evidence of general reliability.
 
 ## Run the engine evaluation
@@ -88,7 +104,7 @@ adapter must disable ambient tools and memory; the harness cannot enforce those
 properties inside an arbitrary supplied command. Record the exact provider model,
 not a moving alias, and verify that the adapter actually uses it.
 
-The default is 12 cases × 2 repetitions × 2 conditions = 48 decisions. Both arms
+The default is 20 restricted-format cases × 2 repetitions × 2 conditions = 80 decisions. Both arms
 get the same aggregate evidence and claim. Neither sees labels or source paths.
 Cases are deterministically shuffled and condition order counterbalanced. Every
 model invocation starts in a fresh temporary directory without prior conversation.
@@ -113,7 +129,7 @@ The recorded preflight currently has **zero real model decisions**.
 ## Planned independent acceptance evaluation
 
 **Status: protocol only; not collected or executed.** The current scripts
-materialize the 12 smoke cases above. They do not yet ingest a general independent
+materialize the 20 restricted-format cases above. They do not yet ingest a general independent
 question bank, adjudicate labels, calculate dataset-cluster intervals, or fetch
 provider billing. Implement and validate those capabilities before using them for
 [stable-release acceptance](../../docs/RELEASE_CRITERIA.md).
@@ -161,6 +177,6 @@ a false-block increase of no more than two percentage points and a complete run.
 A small/inconclusive interval or a baseline with zero unsafe allows does not establish
 benefit; retain the result and extend the evaluation prospectively.
 
-The present 48-decision smoke plan does not satisfy this independent protocol.
+The present 80-decision smoke plan does not satisfy this independent protocol.
 Passing test-double adapters verifies plumbing only. A native MCP host evaluation
 would be a separately specified experiment; do not conflate it with mediated calls.

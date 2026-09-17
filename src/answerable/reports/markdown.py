@@ -32,9 +32,13 @@ def render_markdown(run: AssessmentRun) -> str:
         "",
         data["executive_explanation"],
         "",
+        "The verdict concerns question answerability. "
+        "Unsupported claims are unverified or blocked; "
+        "they are not necessarily false. Only exact recomputed descriptive means are supported.",
+        "",
         "## What you may claim",
         "",
-        _bullets(list(run.allowed_claims), "Nothing beyond the raw counts."),
+        _bullets(list(run.allowed_claims), "No submitted claim is verified and permitted."),
         "",
         "## What you may not claim",
         "",

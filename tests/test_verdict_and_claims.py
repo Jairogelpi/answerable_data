@@ -54,7 +54,9 @@ class VerdictAndClaimTests(unittest.TestCase):
         good = ClaimContext(ClaimClass.DESCRIPTIVE, "customers", "2026")
         bad = ClaimContext(ClaimClass.ASSOCIATION, None, None, causal_gate=False)
         result = VerdictEngine().decide(
-            (), claims=(("Revenue rose", good), ("Campaign caused revenue", bad))
+            (),
+            claims=(("Revenue rose", good), ("Campaign caused revenue", bad)),
+            verified_descriptive_claims=("Revenue rose",),
         )
         self.assertEqual(result.allowed_claims, ("Revenue rose",))
         self.assertEqual(result.forbidden_claims, ("Campaign caused revenue",))

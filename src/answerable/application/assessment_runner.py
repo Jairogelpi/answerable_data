@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -53,6 +54,7 @@ _CATEGORY = {
     "timezone_ambiguity": "data_integrity",
     "prediction_leakage": "data_integrity",
     "duplicate_entities": "data_integrity",
+    "invalid_outcome": "data_integrity",
     "ambiguous_grain": "data_integrity",
     "insufficient_power": "power",
     "definition_change": "data_integrity",
@@ -60,6 +62,7 @@ _CATEGORY = {
 }
 _ALL_CLAIMS = frozenset(
     {
+        "invalid_outcome",
         "duplicate_entities",
         "prediction_leakage",
         "invalid_event_time",
@@ -70,6 +73,12 @@ _ALL_CLAIMS = frozenset(
 )
 _DESIGN_IMPOSSIBLE = frozenset({"causal_identification_failure", "positivity_violation"})
 _REPAIR = {
+    "invalid_outcome": (
+        "Complete finite numeric outcomes and non-null group labels.",
+        "Silently excluding invalid records changes the population and denominator.",
+        True,
+        "correct the source values or document a new upstream analysis population",
+    ),
     "identification_evidence_missing": (
         "Explicit design evidence or declared identifying assumptions.",
         "Empirical overlap alone does not establish causal identification.",
@@ -178,6 +187,7 @@ _CHECKS = (
 
 
 _FINDING_CHECK = {
+    "invalid_outcome": "chk_observed_means",
     "duplicate_entities": "chk_grain_uniqueness",
     "ambiguous_grain": "chk_grain_uniqueness",
     "invalid_event_time": "chk_temporal_maturity",
@@ -328,8 +338,8 @@ class AssessmentRunner:
         spec: AssessmentSpec,
         output_directory: Path,
     ) -> AssessmentRun:
-        if not data_sources:
-            raise ValueError("at least one data source is required")
+        if len(data_sources) != 1:
+            raise ValueError("exactly one data source is supported per assessment")
         inspector = FileInspector()
         try:
             snapshots = tuple(inspector.inspect(path) for path in data_sources)
@@ -342,6 +352,7 @@ class AssessmentRunner:
                 {
                     "spec": to_dict(spec),
                     "sources": [item.fingerprint for item in snapshots],
+                    "claim_verifier": "observed-means-v1",
                 }
             )[:16]
         )
@@ -375,12 +386,33 @@ class AssessmentRunner:
             )
             for candidate in spec.claims
         )
-        verdict = VerdictEngine().decide(finding_inputs, claims=claims)
+        summary = _mean_claim(descriptive, spec.mapping)
+        verdict = VerdictEngine().decide(
+            finding_inputs, claims=claims, verified_descriptive_claims=(summary,)
+        )
 
         repairs = _repair_plan(findings)
         status = _evidence_status(spec, rows, findings)
         graph = _build_graph(spec, snapshots, descriptive, findings, verdict, status)
         observations = {
+            "computed_mean_claim": summary,
+            "claim_validation": [
+                {
+                    "text": candidate.text,
+                    "status": "supported"
+                    if candidate.claim_class is ClaimClass.DESCRIPTIVE
+                    and candidate.text in verdict.allowed_claims
+                    else "unverified_or_blocked",
+                    "reason": (
+                        "Matches recomputed means and passed applicable checks."
+                        if candidate.claim_class is ClaimClass.DESCRIPTIVE
+                        and candidate.text in verdict.allowed_claims
+                        else "Not a verified descriptive mean statement, or blocked by findings. "
+                        "Unsupported does not by itself mean false."
+                    ),
+                }
+                for candidate in spec.claims
+            ],
             "identified": identified,
             "outcome_rates": [
                 {"group": group, "entities": count, "rate": rate}
@@ -499,14 +531,29 @@ def _describe(path: Path, mapping: DataMapping) -> _Descriptive:
     outcome = _identifier(mapping.outcome_column)
     with duckdb.connect() as connection:
         rows = connection.execute(
-            f"SELECT cast({treatment} AS VARCHAR), count(*), avg(try_cast({outcome} AS DOUBLE)) "
+            f"SELECT cast({treatment} AS VARCHAR), count(try_cast({outcome} AS DOUBLE)), "
+            f"avg(try_cast({outcome} AS DOUBLE)) "
             f"FROM {_relation(path)} GROUP BY 1 ORDER BY 1"
         ).fetchall()
+    if any(row[2] is None or not math.isfinite(row[2]) for row in rows):
+        return _Descriptive((), None, None)
     by_group = tuple((str(row[0]), int(row[1]), float(row[2])) for row in rows)
     if len(by_group) != 2:
         return _Descriptive(by_group, None, None)
     baseline = by_group[0][2]
     return _Descriptive(by_group, by_group[1][2] - baseline, baseline)
+
+
+def _mean_claim(descriptive: _Descriptive, mapping: DataMapping) -> str:
+    """Closed, six-decimal grammar; never infer the meaning of arbitrary prose."""
+    groups = "; ".join(
+        f"{json.dumps(group)}={rate:.6f} (n={count})" for group, count, rate in descriptive.by_group
+    )
+    return (
+        f"Observed means of {json.dumps(mapping.outcome_column)} by "
+        f"{json.dumps(mapping.treatment_column)} among supplied records "
+        f"(six decimals): {groups}."
+    )
 
 
 def _overlap(rows: tuple[dict[str, object], ...], mapping: DataMapping) -> bool:
@@ -536,6 +583,19 @@ def _run_checks(
     spec: AssessmentSpec,
 ) -> tuple[Finding, ...]:
     findings: list[Finding] = []
+    if not rows or any(
+        not isinstance(row["outcome"], (int, float))
+        or not math.isfinite(row["outcome"])
+        or row["treatment"] is None
+        for row in rows
+    ):
+        findings.append(
+            Finding(
+                "invalid_outcome",
+                Severity.BLOCKER,
+                "Means require finite numeric outcomes, non-null groups, and non-empty data.",
+            )
+        )
     grain = GrainAnalyzer().infer(snapshot.profile)
     entities = {row["entity"] for row in rows}
     if len(entities) != len(rows):
@@ -648,7 +708,7 @@ def _power_findings(rows: tuple[dict[str, object], ...]) -> tuple[Finding, ...]:
     by_treatment: dict[object, list[float]] = {}
     for row in rows:
         outcome = row.get("outcome")
-        if isinstance(outcome, (int, float)):
+        if isinstance(outcome, (int, float)) and math.isfinite(outcome):
             by_treatment.setdefault(row["treatment"], []).append(float(outcome))
     groups = sorted(by_treatment.items(), key=lambda item: str(item[0]))
     if len(groups) != 2 or any(len(values) < 2 for _, values in groups):
@@ -849,7 +909,12 @@ def _warrant_payload(
                 )
             )
         ),
-        "limitations": [item.message for item in findings if item.severity is Severity.WARNING],
+        "limitations": [
+            "The verdict assesses the question, not the truth of submitted prose. "
+            "Only exact recomputed descriptive mean statements can be supported; "
+            "free text and causal estimates are not verified.",
+            *[item.message for item in findings if item.severity is Severity.WARNING],
+        ],
         "data_quality_relevance": observations,
         "minimum_evidence_plan": {
             "candidates": [to_dict(item) for item in candidates],

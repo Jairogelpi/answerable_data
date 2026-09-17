@@ -80,6 +80,7 @@ def _print_run(run: AssessmentRun) -> None:
     if run.blockers:
         for blocker in run.blockers:
             print(f"  x {blocker.finding_id}: {blocker.message}")
+    print("Claim verification: only recomputed descriptive statements; free text is unverified.")
     print("Supported claims:")
     if run.allowed_claims:
         for claim in run.allowed_claims:
