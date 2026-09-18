@@ -469,7 +469,8 @@ Global `--json` can be placed before a subcommand for machine-readable output, f
 | `answerable demo [causal\|grain\|maturity]` | Runs a built-in adversarial case end to end. |
 | `answerable assess --data <file>... --question <question.yaml> --output <dir>` | Executes the full assessment and writes an Evidence Warrant. |
 | `answerable warrant verify --warrant <warrant.json>` | Verifies warrant integrity. |
-| `answerable warrant show \| export` | Not available; exits 5. Read the JSON/Markdown artifacts produced by `assess`. |
+| `answerable warrant show --warrant <warrant.json>` | Prints the decoded warrant record (id, hash, signature status, full data). |
+| `answerable warrant export --warrant <warrant.json> [--format json\|markdown\|html] [--output <file>]` | Renders the warrant in the given format; writes to `--output` or prints it. |
 | `answerable benchmark mutations --output <dir>` | Runs the live 112-pair mutation benchmark. |
 | `answerable benchmark --freeze --output <dir>` | Produces a hash-addressed frozen benchmark release. |
 | `answerable source add \| test` | Not available; exits 5. |
@@ -480,10 +481,11 @@ implemented operations; they return `command_unavailable` and exit 5. Use
 `init` for question scaffolding, `assess` for the full run, and the documented
 MCP tools for inspection and reading assessment artifacts.
 
-`warrant verify` requires `--warrant`. A missing, unreadable or malformed file
-returns an explicit error (exit 2), never success. A checked but invalid warrant
-returns `valid: false` (exit 3), including in human output. A valid warrant
-returns exit 0; this verifies integrity, not the truth of its claims.
+`warrant verify`, `warrant show` and `warrant export` all require `--warrant`.
+A missing, unreadable or malformed file returns an explicit error (exit 2),
+never success. For `verify`, a checked but invalid warrant returns
+`valid: false` (exit 3), including in human output. A valid warrant returns
+exit 0; this verifies integrity, not the truth of its claims.
 With `--json`, these errors are structured JSON on stdout; human errors go to
 stderr. Existing parser usage errors follow argparse's stderr/exit-2 behavior.
 

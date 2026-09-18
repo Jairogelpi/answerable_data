@@ -64,9 +64,11 @@ def build_parser() -> argparse.ArgumentParser:
     warrant.add_argument(
         "action",
         choices=("show", "export", "verify"),
-        help="verify requires --warrant; show/export are not available (exit 5).",
+        help="All actions require --warrant <warrant.json>.",
     )
     warrant.add_argument("--warrant", type=Path, default=None)
+    warrant.add_argument("--format", choices=("json", "markdown", "html"), default="json")
+    warrant.add_argument("--output", type=Path, default=None)
 
     source = subparsers.add_parser("source", help="Not available in this release (exit 5).")
     source.add_argument("action", choices=("add", "test"))
@@ -284,26 +286,53 @@ def _mcp() -> int:
     return 0
 
 
-def _verify(path: Path | None) -> tuple[int, dict[str, object]]:
+def _warrant(args: argparse.Namespace) -> tuple[int, dict[str, object]]:
     from answerable.application.assessment_runner import load_warrant
     from answerable.public import verify_warrant
+    from answerable.warrants.service import WarrantIssuer
 
-    if path is None:
+    if args.warrant is None:
         return EXIT_USAGE, {
             "status": "error",
             "code": "warrant_required",
-            "message": "warrant verify requires --warrant <warrant.json>; nothing was verified.",
+            "message": f"warrant {args.action} requires --warrant <warrant.json>; "
+            "nothing was performed.",
         }
     try:
-        valid = verify_warrant(load_warrant(path))
+        record = load_warrant(args.warrant)
     except (OSError, ValueError, TypeError, KeyError, AttributeError):
         return EXIT_USAGE, {
             "status": "error",
             "code": "warrant_unreadable",
-            "warrant": str(path),
-            "message": "Cannot read or decode the warrant; nothing was verified.",
+            "warrant": str(args.warrant),
+            "message": "Cannot read or decode the warrant; nothing was performed.",
         }
-    return (0 if valid else EXIT_INVALID_WARRANT), {"warrant": str(path), "valid": valid}
+
+    if args.action == "verify":
+        valid = verify_warrant(record)
+        return (0 if valid else EXIT_INVALID_WARRANT), {
+            "warrant": str(args.warrant),
+            "valid": valid,
+        }
+
+    if args.action == "show":
+        return 0, {
+            "warrant": str(args.warrant),
+            "warrant_id": record.warrant_id,
+            "version": record.version,
+            "content_hash": record.content_hash,
+            "issued_at": record.issued_at.isoformat(),
+            "signer": record.signer,
+            "signed": record.signature is not None,
+            "data": dict(record.data),
+        }
+
+    # export
+    rendered = WarrantIssuer.export(record, args.format)
+    if args.output is not None:
+        args.output.write_text(rendered, encoding="utf-8")
+        return 0, {"warrant": str(args.warrant), "format": args.format, "output": str(args.output)}
+    return 0, {"warrant": str(args.warrant), "format": args.format, "rendered": rendered}
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -320,9 +349,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         code, payload = _benchmark(args, json_output=args.json_output)
     elif args.command == "doctor":
         code, payload = _doctor()
-    elif args.command == "warrant" and args.action == "verify":
-        code, payload = _verify(args.warrant)
-    else:
+    elif args.command == "warrant":
+        code, payload = _warrant(args)
+    elif args.command in COMMANDS or args.command == "source":
         code, payload = (
             EXIT_UNAVAILABLE,
             {
@@ -330,6 +359,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "code": "command_unavailable",
                 "message": "This command is not available in this release; "
                 "no operation was performed.",
+            },
+        )
+    else:
+        code, payload = (
+            EXIT_USAGE,
+            {
+                "status": "error",
+                "code": "unknown_command",
+                "message": f"unknown command: {args.command}",
             },
         )
     payload["command"] = args.command
@@ -347,10 +385,23 @@ def main(argv: Sequence[str] | None = None) -> int:
             marker = "+" if status == "ok" else "x"
             print(f"{marker} {dependency}: {status}")
         print(f"Status: {payload['status']}")
-    elif args.command == "warrant":
+    elif args.command == "warrant" and args.action == "verify":
         label = "valid" if payload["valid"] else "INVALID"
         print(
             f"Warrant {payload['warrant']}: {label}",
             file=sys.stdout if payload["valid"] else sys.stderr,
         )
+    elif args.command == "warrant" and args.action == "show":
+        print(f"Warrant: {payload['warrant_id']} (v{payload['version']})")
+        print(f"Content hash: {payload['content_hash']}")
+        print(f"Issued at: {payload['issued_at']}")
+        print(f"Signed: {payload['signed']}")
+        data = cast(dict[str, object], payload["data"])
+        for key, value in data.items():
+            print(f"  {key}: {value}")
+    elif args.command == "warrant" and args.action == "export":
+        if "output" in payload:
+            print(f"Wrote {payload['format']} export to {payload['output']}")
+        else:
+            print(payload["rendered"])
     return code

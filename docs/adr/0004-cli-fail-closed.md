@@ -12,11 +12,16 @@ incorrect success cases instead of testing an actual verification.
 
 ## Decision
 
-- Reserved `frame`, `plan`, `execute`, `inspect`, `source add/test` and
-  `warrant show/export` return exit 5 and `command_unavailable`. Help and README
-  explicitly mark them unavailable. This change does not implement them.
-- Verification requires a path. Missing, unreadable and malformed inputs return
-  exit 2 with `warrant_required` or `warrant_unreadable`. No `valid` field is
+- Reserved `frame`, `plan`, `execute`, `inspect` and `source add/test` return
+  exit 5 and `command_unavailable`. Help and README explicitly mark them
+  unavailable. This change does not implement them.
+- `warrant show` and `warrant export` are implemented for real: both load and
+  decode the on-disk `WarrantRecord` (the same one `assess` writes) via the
+  existing `load_warrant` and `WarrantIssuer.export`. `show` prints the
+  decoded fields; `export` renders json/markdown/html to `--output` or stdout.
+- All three warrant actions (`verify`, `show`, `export`) require a path.
+  Missing, unreadable and malformed inputs return exit 2 with
+  `warrant_required` or `warrant_unreadable`. No `valid` field is
   emitted when verification could not be performed.
 - A checked warrant retains exit 0 / `valid: true` or exit 3 / `valid: false`.
   Human output distinguishes valid from INVALID rather than printing `ok`.

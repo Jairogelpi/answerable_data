@@ -18,8 +18,6 @@ UNAVAILABLE = [
     ("inspect",),
     ("source", "add"),
     ("source", "test"),
-    ("warrant", "show"),
-    ("warrant", "export"),
 ]
 
 
@@ -82,6 +80,52 @@ def test_FR_CLI_001_unreadable_warrant_is_a_structured_error(
     assert result.returncode == 2
     assert json.loads(result.stdout)["code"] == "warrant_unreadable"
     assert "Traceback" not in result.stderr
+
+
+@pytest.mark.parametrize("action", ["show", "export"])
+def test_FR_CLI_001_warrant_show_export_require_a_file(tmp_path: Path, action: str) -> None:
+    result = subprocess.run(
+        [*ENTRY, "--json", "warrant", action],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert result.returncode == 2
+    payload = json.loads(result.stdout)
+    assert payload["code"] == "warrant_required"
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_FR_CLI_001_warrant_show_and_export_reflect_the_real_warrant(tmp_path: Path) -> None:
+    example = Path(__file__).resolve().parents[1] / "examples/campaign_retention"
+    run = AssessmentRunner().run(
+        data_sources=(example / "customers.csv",),
+        spec=load_spec(example / "question.yaml"),
+        output_directory=tmp_path,
+    )
+    path = run.artifacts["warrant"]
+
+    show = subprocess.run(
+        [*ENTRY, "--json", "warrant", "show", "--warrant", str(path)],
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert show.returncode == 0
+    payload = json.loads(show.stdout)
+    assert payload["warrant_id"] == json.loads(path.read_text())["warrant_id"]
+    assert "data" in payload
+
+    export = subprocess.run(
+        [*ENTRY, "--json", "warrant", "export", "--warrant", str(path), "--format", "markdown"],
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert export.returncode == 0
+    export_payload = json.loads(export.stdout)
+    assert "## " in export_payload["rendered"]
 
 
 def test_FR_CLI_001_real_warrant_and_tampering_have_distinct_exit_codes(tmp_path: Path) -> None:

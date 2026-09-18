@@ -37,6 +37,56 @@ class InterfaceTests(unittest.TestCase):
         self.assertEqual(payload["code"], "warrant_required")
         self.assertNotIn("valid", payload)
 
+    def test_unimplemented_commands_fail_loudly(self) -> None:
+        for command in ("frame", "plan", "execute", "inspect"):
+            output = StringIO()
+            with redirect_stdout(output):
+                code = main(("--json", command))
+            self.assertNotEqual(code, 0, f"{command} silently reported success")
+            payload: dict[str, object] = json.loads(output.getvalue())
+            self.assertEqual(payload.get("status"), "error")
+        for action in ("add", "test"):
+            output = StringIO()
+            with redirect_stdout(output):
+                code = main(("--json", "source", action))
+            self.assertNotEqual(code, 0, f"source {action} silently reported success")
+
+    def test_warrant_show_and_export_round_trip(self) -> None:
+        import tempfile
+        from pathlib import Path
+
+        from answerable.demo import run_demo
+
+        with tempfile.TemporaryDirectory() as tmp:
+            _, run = run_demo("causal", Path(tmp) / "demo")
+            warrant_path = run.artifacts["warrant"]
+
+            output = StringIO()
+            with redirect_stdout(output):
+                code = main(("--json", "warrant", "show", "--warrant", str(warrant_path)))
+            self.assertEqual(code, 0)
+            payload: dict[str, object] = json.loads(output.getvalue())
+            self.assertIn("warrant_id", payload)
+            self.assertIn("data", payload)
+
+            output = StringIO()
+            with redirect_stdout(output):
+                code = main(
+                    (
+                        "--json",
+                        "warrant",
+                        "export",
+                        "--warrant",
+                        str(warrant_path),
+                        "--format",
+                        "markdown",
+                    )
+                )
+            self.assertEqual(code, 0)
+            export_payload: dict[str, object] = json.loads(output.getvalue())
+            rendered: str = str(export_payload["rendered"])
+            self.assertIn("## ", rendered)
+
     def test_phase_15_mcp_returns_structured_redacted_content(self) -> None:
         server = MCPServer(
             {"inspect_data": lambda _: {"columns": ["id"], "rows": [[1]], "secrets": "x"}}
