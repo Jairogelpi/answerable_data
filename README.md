@@ -469,11 +469,23 @@ Global `--json` can be placed before a subcommand for machine-readable output, f
 | `answerable demo [causal\|grain\|maturity]` | Runs a built-in adversarial case end to end. |
 | `answerable assess --data <file>... --question <question.yaml> --output <dir>` | Executes the full assessment and writes an Evidence Warrant. |
 | `answerable warrant verify --warrant <warrant.json>` | Verifies warrant integrity. |
-| `answerable warrant show \| export` | Inspects or exports a warrant. |
+| `answerable warrant show \| export` | Not available; exits 5. Read the JSON/Markdown artifacts produced by `assess`. |
 | `answerable benchmark mutations --output <dir>` | Runs the live 112-pair mutation benchmark. |
 | `answerable benchmark --freeze --output <dir>` | Produces a hash-addressed frozen benchmark release. |
-| `answerable source add \| test` | Registers and health-checks supported read-only data connectors. |
+| `answerable source add \| test` | Not available; exits 5. |
 | `answerable mcp` | Starts the packaged FastMCP stdio server. |
+
+`frame`, `plan`, `execute` and `inspect` are also reserved CLI names, not
+implemented operations; they return `command_unavailable` and exit 5. Use
+`init` for question scaffolding, `assess` for the full run, and the documented
+MCP tools for inspection and reading assessment artifacts.
+
+`warrant verify` requires `--warrant`. A missing, unreadable or malformed file
+returns an explicit error (exit 2), never success. A checked but invalid warrant
+returns `valid: false` (exit 3), including in human output. A valid warrant
+returns exit 0; this verifies integrity, not the truth of its claims.
+With `--json`, these errors are structured JSON on stdout; human errors go to
+stderr. Existing parser usage errors follow argparse's stderr/exit-2 behavior.
 
 External-agent benchmark utilities live under `scripts/` and preserve blind case export, raw agent runs, decision scoring, statistical comparison and SVG regeneration.
 

@@ -17,6 +17,8 @@ _CLEAN_VERDICTS = frozenset({Verdict.ANSWERABLE, Verdict.ANSWERABLE_WITH_ASSUMPT
 EXIT_BLOCKED = 2
 EXIT_INVALID_WARRANT = 3
 EXIT_BENCHMARK_FAILED = 4
+EXIT_UNAVAILABLE = 5
+EXIT_USAGE = 2
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -27,7 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--json", action="store_true", dest="json_output")
     subparsers = parser.add_subparsers(dest="command", required=True)
     for command in COMMANDS:
-        subparsers.add_parser(command)
+        subparsers.add_parser(command, help="Not available in this release (exit 5).")
 
     subparsers.add_parser("doctor", help="Check that the local Answerable runtime is ready.")
 
@@ -59,10 +61,14 @@ def build_parser() -> argparse.ArgumentParser:
     assess.add_argument("--format", choices=("json", "markdown", "both"), default="both")
 
     warrant = subparsers.add_parser("warrant")
-    warrant.add_argument("action", choices=("show", "export", "verify"))
+    warrant.add_argument(
+        "action",
+        choices=("show", "export", "verify"),
+        help="verify requires --warrant; show/export are not available (exit 5).",
+    )
     warrant.add_argument("--warrant", type=Path, default=None)
 
-    source = subparsers.add_parser("source")
+    source = subparsers.add_parser("source", help="Not available in this release (exit 5).")
     source.add_argument("action", choices=("add", "test"))
 
     subparsers.add_parser(
@@ -278,11 +284,25 @@ def _mcp() -> int:
     return 0
 
 
-def _verify(path: Path) -> tuple[int, dict[str, object]]:
+def _verify(path: Path | None) -> tuple[int, dict[str, object]]:
     from answerable.application.assessment_runner import load_warrant
     from answerable.public import verify_warrant
 
-    valid = verify_warrant(load_warrant(path))
+    if path is None:
+        return EXIT_USAGE, {
+            "status": "error",
+            "code": "warrant_required",
+            "message": "warrant verify requires --warrant <warrant.json>; nothing was verified.",
+        }
+    try:
+        valid = verify_warrant(load_warrant(path))
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        return EXIT_USAGE, {
+            "status": "error",
+            "code": "warrant_unreadable",
+            "warrant": str(path),
+            "message": "Cannot read or decode the warrant; nothing was verified.",
+        }
     return (0 if valid else EXIT_INVALID_WARRANT), {"warrant": str(path), "valid": valid}
 
 
@@ -300,15 +320,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         code, payload = _benchmark(args, json_output=args.json_output)
     elif args.command == "doctor":
         code, payload = _doctor()
-    elif args.command == "warrant" and args.action == "verify" and args.warrant is not None:
+    elif args.command == "warrant" and args.action == "verify":
         code, payload = _verify(args.warrant)
     else:
-        code, payload = 0, {"status": "ok"}
+        code, payload = (
+            EXIT_UNAVAILABLE,
+            {
+                "status": "error",
+                "code": "command_unavailable",
+                "message": "This command is not available in this release; "
+                "no operation was performed.",
+            },
+        )
     payload["command"] = args.command
     if getattr(args, "action", None):
         payload["action"] = args.action
     if args.json_output:
         print(json.dumps(payload, sort_keys=True, ensure_ascii=False))
+    elif payload.get("status") == "error":
+        print(f"answerable: {payload['message']}", file=sys.stderr)
     elif args.command == "doctor":
         print(f"Answerable {payload['version']}")
         print(f"Python {payload['python']}")
@@ -317,6 +347,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             marker = "+" if status == "ok" else "x"
             print(f"{marker} {dependency}: {status}")
         print(f"Status: {payload['status']}")
-    elif args.command not in {"assess", "demo", "benchmark", "init"}:
-        print(f"answerable {args.command}: ok")
+    elif args.command == "warrant":
+        label = "valid" if payload["valid"] else "INVALID"
+        print(
+            f"Warrant {payload['warrant']}: {label}",
+            file=sys.stdout if payload["valid"] else sys.stderr,
+        )
     return code

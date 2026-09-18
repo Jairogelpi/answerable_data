@@ -31,8 +31,11 @@ class InterfaceTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             code = main(("--json", "warrant", "verify"))
-        self.assertEqual(code, 0)
-        self.assertEqual(json.loads(output.getvalue())["action"], "verify")
+        self.assertEqual(code, 2)
+        payload = json.loads(output.getvalue())
+        self.assertEqual(payload["action"], "verify")
+        self.assertEqual(payload["code"], "warrant_required")
+        self.assertNotIn("valid", payload)
 
     def test_phase_15_mcp_returns_structured_redacted_content(self) -> None:
         server = MCPServer(
