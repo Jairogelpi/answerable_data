@@ -1,6 +1,6 @@
 # Roadmap
 
-Answerable v0.1.0 is the validity-engine technical preview. The roadmap prioritizes a usable vertical slice rather than adding more architecture.
+Answerable is a validity-engine technical preview, currently at v0.3.0 (see [CHANGELOG.md](CHANGELOG.md) for the exact released version). The roadmap prioritizes a usable vertical slice rather than adding more architecture.
 
 ## v0.2 — First complete workflow
 

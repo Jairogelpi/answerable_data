@@ -1,6 +1,6 @@
 # Support
 
-Answerable v0.1.0 is a technical preview maintained on a best-effort basis.
+Answerable is a technical preview (see [CHANGELOG.md](CHANGELOG.md) for the current version) maintained on a best-effort basis.
 
 - Use GitHub Issues for reproducible defects and focused feature proposals.
 - Use GitHub Discussions for methodology, design and usage questions.
@@ -9,4 +9,4 @@ Answerable v0.1.0 is a technical preview maintained on a best-effort basis.
 
 Before opening a defect, include the Answerable version, Python version, operating system, minimal reproduction and full error text with secrets removed.
 
-There is no commercial SLA, production-data warranty or methodological certification in v0.1.0.
+There is no commercial SLA, production-data warranty or methodological certification pre-1.0.

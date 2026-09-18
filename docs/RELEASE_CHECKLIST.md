@@ -1,4 +1,6 @@
-# v0.1.0 release checklist
+# Release checklist
+
+Reusable for every release; fill in `<version>` with the version being cut.
 
 ## Automated gates
 
@@ -14,9 +16,9 @@
 
 ## Release integrity
 
-- [ ] Version is 0.1.0 in package metadata and runtime.
+- [ ] Version is `<version>` in package metadata and runtime.
 - [ ] README examples match actual behavior.
-- [ ] CHANGELOG contains 0.1.0.
+- [ ] CHANGELOG contains `<version>`.
 - [ ] License metadata and LICENSE agree.
 - [ ] Tag is annotated and points to the verified main commit.
 - [ ] GitHub release contains wheel and sdist with provenance attestation.

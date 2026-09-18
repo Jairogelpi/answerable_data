@@ -15,7 +15,7 @@ Your code has tests. Your data has tests. **Your conclusions should too.**
 ![MCP](https://img.shields.io/badge/MCP-stdio-5b5bd6)
 ![License](https://img.shields.io/badge/license-Apache--2.0-green)
 
-[Quickstart](#quickstart) · [Why Answerable](#why-answerable) · [Evidence](#evidence-not-promises) · [MCP](#use-answerable-as-an-mcp-tool) · [Benchmark](#epistemic-mutation-testing) · [Research](#research-and-reproducibility) · [Architecture](#architecture)
+[Quickstart](#quickstart) · [Why Answerable](#why-answerable) · [vs. adjacent tools](#how-this-differs-from-adjacent-tools) · [Evidence](#evidence-not-promises) · [MCP](#use-answerable-as-an-mcp-tool) · [Benchmark](#epistemic-mutation-testing) · [Research](#research-and-reproducibility) · [Architecture](#architecture)
 
 </div>
 
@@ -197,6 +197,19 @@ Answerable is designed for:
 - teams that need a reproducible audit trail for why a conclusion was allowed or blocked.
 
 It is deliberately **not** a chat-with-data product, dashboarding system, generic dataframe library, causal estimator, or replacement for domain expertise.
+
+## How this differs from adjacent tools
+
+None of these do what Answerable does, but each solves a related, narrower problem:
+
+| Category | Examples | What it checks | What it does not check |
+| --- | --- | --- | --- |
+| LLM guardrail frameworks | Guardrails AI, NeMo Guardrails | Whether generated text is grounded in retrieved context | Whether a causal/statistical claim is *identified* by the data's design, or exactly recomputable |
+| Context/semantic layers for BI agents | Kaelio, Microsoft Fabric IQ, dbt Semantic Layer | Lineage, permissions, consistent metric definitions | Whether the underlying design supports the conclusion at all |
+| Causal inference libraries | Microsoft DoWhy/EconML | How to estimate a causal effect once you've chosen a strategy | Whether that strategy is admissible for this data, and whether to block the claim if it isn't |
+| Data-quality/observability | Great Expectations, Monte Carlo, Soda | Nulls, schema drift, freshness | Analytical or causal validity of a conclusion drawn from clean data |
+
+Answerable's scope is narrower and stricter than any of these: recompute the exact claim, check the identification conditions, and produce a deterministic verdict plus an Evidence Warrant that blocks what the data cannot support. It is not a replacement for any of the above — most real pipelines will use a semantic layer or data-quality tool *and* Answerable.
 
 ## Evidence, not promises
 
