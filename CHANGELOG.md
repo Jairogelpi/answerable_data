@@ -18,6 +18,18 @@ All notable changes follow Keep a Changelog and Semantic Versioning.
 - Preserve byte-identical external benchmark snapshots and reports on Windows checkouts; keep strict SHA-256 validation enabled and test `core.autocrlf=true` checkout reproducibility.
 - Overlap no longer substitutes for exchangeability; support is required in every target stratum. Deterministic blockers govern claim lists and findings link to their producing checks (PR #22).
 - Public `answerable.__version__` agrees with package and CLI version `0.3.0` instead of reporting `0.2.0`.
+- `frame`, `plan`, `execute`, `inspect`, `source add/test` and `warrant verify`
+  without `--warrant` no longer report exit 0 / `status: ok` without performing
+  an operation; they now fail closed with an explicit error (ADR 0004, #26).
+  `warrant show` and `warrant export` are now implemented for real instead of
+  also being marked unavailable.
+- Added a test that enumerates every subcommand `build_parser()` registers and
+  fails by name if one is neither wired to a real handler nor explicitly
+  marked reserved/unavailable, so a new command can no longer silently fall
+  through to a fake success the way the commands above did (ADR 0005).
+- `ROADMAP.md`, `SUPPORT.md` and `docs/RELEASE_CHECKLIST.md` no longer
+  hardcode a stale `v0.1.0`; they point at `CHANGELOG.md` for the current
+  version instead.
 
 
 ## [0.3.0] - 2026-08-17

@@ -9,6 +9,7 @@ import pytest
 
 from answerable.application.assessment_runner import AssessmentRunner
 from answerable.application.spec_loader import load_spec
+from answerable.cli import COMMANDS, build_parser
 
 ENTRY = [sys.executable, "-c", "from answerable.cli import main; raise SystemExit(main())"]
 UNAVAILABLE = [
@@ -19,6 +20,40 @@ UNAVAILABLE = [
     ("source", "add"),
     ("source", "test"),
 ]
+
+# Every top-level subcommand argparse knows about must be accounted for here as either
+# implemented (has a real handler in cli.main and its own acceptance test) or reserved
+# (deliberately unavailable). A command that appears in neither is exactly the bug class
+# that shipped silently before: main() falls through and cannot know whether the new
+# name was supposed to do something. Line coverage cannot catch that -- the fallthrough
+# branch is still "covered", it's just covered doing the wrong thing. This test makes
+# adding a new subcommand without wiring it a hard failure instead of a silent gap.
+IMPLEMENTED_COMMANDS = {"doctor", "init", "demo", "benchmark", "assess", "warrant", "mcp"}
+RESERVED_COMMANDS = set(COMMANDS) | {"source"}
+
+
+def _registered_subcommands() -> set[str]:
+    subparsers_action = next(
+        action
+        for action in build_parser()._subparsers._group_actions  # type: ignore[union-attr]
+        if hasattr(action, "choices")
+    )
+    choices = subparsers_action.choices
+    assert choices is not None
+    return set(choices)
+
+
+def test_FR_CLI_001_every_registered_subcommand_is_classified() -> None:
+    registered = _registered_subcommands()
+    known = IMPLEMENTED_COMMANDS | RESERVED_COMMANDS
+    unclassified = registered - known
+    assert not unclassified, (
+        f"{unclassified} are registered in build_parser() but not classified as "
+        "implemented or reserved in this test file -- add real dispatch + an "
+        "acceptance test, or add to RESERVED_COMMANDS if deliberately unavailable."
+    )
+    stale = known - registered
+    assert not stale, f"{stale} are classified here but no longer registered in build_parser()"
 
 
 @pytest.mark.parametrize("args", UNAVAILABLE)
