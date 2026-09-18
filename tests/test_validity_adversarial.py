@@ -84,13 +84,20 @@ def test_INV_009_descriptive_question_does_not_require_causal_identification(
     spec = replace(
         spec,
         contract=replace(spec.contract, analysis_type=AnalysisType.DESCRIPTIVE),
-        claims=(ClaimCandidate("Observed group means differ.", ClaimClass.DESCRIPTIVE),),
+        claims=(
+            ClaimCandidate(
+                'Observed means of "retained_90d" by "campaign_exposed" '
+                "among supplied records (six decimals): "
+                '"false"=0.500000 (n=4); "true"=0.750000 (n=4).',
+                ClaimClass.DESCRIPTIVE,
+            ),
+        ),
     )
     run = AssessmentRunner().run(
         data_sources=(root / "customers.csv",), spec=spec, output_directory=root / "out"
     )
     assert run.verdict is Verdict.ANSWERABLE
-    assert run.allowed_claims == ("Observed group means differ.",)
+    assert run.allowed_claims == (spec.claims[0].text,)
 
 
 def test_INV_001_findings_point_to_the_check_that_computed_them(tmp_path: Path) -> None:
@@ -122,7 +129,7 @@ def test_INV_008_assumptions_never_become_facts_and_change_identity(tmp_path: Pa
     )
     assert old.assessment_id != run.assessment_id
     assert run.verdict is Verdict.ANSWERABLE_WITH_ASSUMPTIONS
-    assert run.allowed_claims
+    assert not run.allowed_claims  # Assumptions do not verify an uncomputed causal estimate.
     ledger = run.observations["evidence_status"]
     assert "conditional_exchangeability" in ledger["declared_assumptions"]
     assert ledger["unverifiable_conditions"]

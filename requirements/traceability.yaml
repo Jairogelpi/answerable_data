@@ -458,7 +458,7 @@ requirements:
     status: verified
   INV-001:
     implementation: ["src/answerable/application/assessment_runner.py"]
-    tests: ["tests/test_validity_adversarial.py"]
+    tests: ["tests/test_validity_adversarial.py", "tests/test_numeric_claims.py"]
     status: implemented
   INV-002:
     implementation: ["src/answerable/evidence/verdict.py"]

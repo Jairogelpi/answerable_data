@@ -24,7 +24,7 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def materialize(output: Path) -> list[dict[str, object]]:
+def materialize(output: Path, *, include_free_text: bool = False) -> list[dict[str, object]]:
     """Transform external dates without inventing observations; preserve every value."""
     manifest = json.loads((SUITE / "manifest.json").read_text())
     cases = []
@@ -59,7 +59,16 @@ def materialize(output: Path) -> list[dict[str, object]]:
             )
             a = mean(r["value"] for r in selected if r["group"] == 0)
             b = mean(r["value"] for r in selected if r["group"] == 1)
-            for variant in ("observed", "causal", "duplicate"):
+            for variant in (
+                "observed",
+                "causal",
+                "duplicate",
+                "false_number",
+                "swapped_groups",
+                "unverified_text",
+            ):
+                if variant == "unverified_text" and not include_free_text:
+                    continue
                 case_id = f"{source['id']}-{scope}-{variant}"
                 folder = output / "cases" / case_id
                 folder.mkdir(parents=True, exist_ok=True)
@@ -68,10 +77,23 @@ def materialize(output: Path) -> list[dict[str, object]]:
                     writer = csv.DictWriter(stream, fieldnames=["entity", "date", "group", "value"])
                     writer.writeheader()
                     writer.writerows(data)
+                n0 = sum(r["group"] == 0 for r in selected)
+                n1 = sum(r["group"] == 1 for r in selected)
                 claim = (
-                    f"Among these recorded {source['unit']}s, the observed mean was {a:.6g} "
-                    f"in January-June and {b:.6g} in July-December ({source['units']})."
+                    'Observed means of "value" by "group" among supplied records '
+                    f'(six decimals): "0"={a:.6f} (n={n0}); "1"={b:.6f} (n={n1}).'
                 )
+                if variant == "false_number":
+                    claim = claim.replace(f'"0"={a:.6f}', '"0"=99999.000000')
+                if variant == "swapped_groups":
+                    claim = claim.replace(f'"0"={a:.6f}', f'"0"={b:.6f}').replace(
+                        f'"1"={b:.6f}', f'"1"={a:.6f}'
+                    )
+                if variant == "unverified_text":
+                    claim = (
+                        f"Among these recorded {source['unit']}s, the observed mean was {a:.6g} "
+                        f"in January-June and {b:.6g} in July-December ({source['units']})."
+                    )
                 if variant == "causal":
                     claim = (
                         "Assignment to July-December caused the observed difference in outcomes."
@@ -119,7 +141,7 @@ def materialize(output: Path) -> list[dict[str, object]]:
                         "case_id": case_id,
                         "source": source["id"],
                         "variant": variant,
-                        "expected_allow": variant == "observed",
+                        "expected_allow": variant in {"observed", "unverified_text"},
                         "claim": claim,
                         "data_sha256": digest(folder / "data.csv"),
                         "question_sha256": digest(folder / "question.json"),
@@ -153,9 +175,9 @@ def engine_fingerprint() -> str:
     return hashlib.sha256(json.dumps(entries, sort_keys=True).encode()).hexdigest()
 
 
-def evaluate(output: Path) -> dict[str, object]:
+def evaluate(output: Path, *, include_free_text: bool = False) -> dict[str, object]:
     output.mkdir(parents=True, exist_ok=True)
-    cases = materialize(output)
+    cases = materialize(output, include_free_text=include_free_text)
     # Freeze labels and hashes before invoking the engine; the oracle is not a verdict lookup.
     (output / "cases.json").write_text(json.dumps(cases, indent=2) + "\n")
     records = []
@@ -183,7 +205,7 @@ def evaluate(output: Path) -> dict[str, object]:
         except Exception as error:
             records.append({**case, "allowed": None, "error": f"{type(error).__name__}: {error}"})
     report = {
-        "protocol": "external-smoke-v1",
+        "protocol": "external-claims-v2",
         "engine_sha256": engine_fingerprint(),
         "evaluator_sha256": digest(Path(__file__)),
         "dependencies": {name: version(name) for name in ("duckdb", "pyyaml", "sqlglot")},
@@ -192,7 +214,8 @@ def evaluate(output: Path) -> dict[str, object]:
         "metrics": metrics(records),
         "limitations": [
             "Two external datasets; questions and labels authored within this project.",
-            "Duplicate cases are explicit perturbations of external data.",
+            "Duplicate, false-number and swapped-group cases are explicit perturbations.",
+            "Optional valid free-text claims measure the closed verifier false-block limitation.",
             "No population/causal generalization or independent expert validation.",
             "Cases within a source are correlated; no independence-based significance test.",
         ],
@@ -205,8 +228,9 @@ def evaluate(output: Path) -> dict[str, object]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--include-free-text", action="store_true")
     args = parser.parse_args()
-    report = evaluate(args.output)
+    report = evaluate(args.output, include_free_text=args.include_free_text)
     print(json.dumps(report["metrics"], indent=2))
     scores = report["metrics"]
     return int(bool(scores["false_blocks"] or scores["unsafe_allows"] or scores["errors"]))

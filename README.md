@@ -22,7 +22,7 @@ Your code has tests. Your data has tests. **Your conclusions should too.**
 > [!IMPORTANT]
 > **Status: alpha.** Answerable checks explicit data and analysis conditions within its implemented scope. Its reports separate verified facts, declared assumptions and conditions not verifiable from the supplied table.
 >
-> CLI and MCP have automated tests. The external-data evaluation uses two datasets and 12 project-authored questions. Improvement from giving an agent Answerable has **not yet been demonstrated with real models**. See [validation evidence](docs/VALIDATION.md) and [stable release criteria](docs/RELEASE_CRITERIA.md).
+> CLI and MCP have automated tests. The external-data evaluation uses two datasets and 20 project-authored cases in a restricted mean-statement format. Improvement from giving an agent Answerable has **not yet been demonstrated with real models**. See [validation evidence](docs/VALIDATION.md) and [stable release criteria](docs/RELEASE_CRITERIA.md).
 
 ![Answerable terminal demo](docs/demo.svg)
 
@@ -74,7 +74,7 @@ reported as `ANSWERABLE_WITH_ASSUMPTIONS`, with facts and unverified conditions
 kept separate. See [ADR 0002](docs/adr/0002-explicit-identification-and-claim-blockers.md).
 
 The [external-data suite](benchmarks/external/README.md) records false blocks as
-well as unsafe allowed claims. Its two datasets are external; its 12 questions
+well as unsafe allowed claims. Its two datasets are external; its 20 restricted-format cases
 and labels are project-authored. This is a small regression evaluation, not proof
 of general validity. A paired agent/tool experiment is executable but **has not
 been run with real models in this revision**.
@@ -83,6 +83,21 @@ The historical EMT-v2 scores below remain historical frozen results. The live
 fixtures now explicitly declare identifying assumptions and produce conditional
 baseline verdicts; they are not identical inputs to that historical comparison.
 A 100% score on project-authored rules/cases is not general superiority over LLMs.
+
+## Claim verification boundary
+
+A Bike Sharing adversarial test exposed a defect: arbitrary false numbers could
+appear in `allowed_claims`. The current source fix supports only **exact,
+recomputed descriptive mean statements**. Free prose, even when true, is
+unverified; declaring a causal assumption does not verify a causal estimate.
+`ANSWERABLE` assesses the question's implemented prerequisites, not every
+submitted sentence. Always inspect the claim lists and findings.
+
+See [the supported format and Windows retest](docs/CLAIM_VERIFICATION.md).
+The extended external evaluation includes truthful free prose and reports its
+false blocks: **4 of 8 valid claims blocked**, with **0 of 16 invalid claims
+allowed** in the regression. This limitation prevents a claim of general
+conclusion validation. Historical benchmark reports are not rewritten.
 
 ## Quickstart
 

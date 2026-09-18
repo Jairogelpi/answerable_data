@@ -43,7 +43,7 @@ causal:
   sensitivity_checks: []
 
 claims:
-  - text: "Observed 90-day retention was 12 points higher among exposed customers."
+  - text: 'Observed means of "retained_90d" by "campaign_exposed" among supplied records (six decimals): "false"=0.480000 (n=25); "true"=0.600000 (n=25).'
     claim_class: descriptive
   - text: "The campaign caused a 12 point increase in 90-day retention."
     claim_class: causal
